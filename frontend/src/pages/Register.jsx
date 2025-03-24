@@ -1,14 +1,14 @@
 export default function Register() {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="p-6 bg-white shadow rounded">
-          <h2 className="text-xl font-bold">Register</h2>
-          <input type="text" placeholder="Full Name" className="w-full p-2 border mt-2" />
-          <input type="text" placeholder="Email" className="w-full p-2 border mt-2" />
-          <input type="password" placeholder="Password" className="w-full p-2 border mt-2" />
-          <button className="w-full bg-green-500 text-white p-2 mt-4">Register</button>
-        </div>
-      </div>
-    );
-  }
-  
+  return (
+    <div className="p-6 text-gray-900 dark:text-white">
+      <h1 className="text-2xl font-bold mb-4">Register as User</h1>
+
+      <form className="flex flex-col gap-4 max-w-md">
+        <input className="p-3 rounded border" type="text" placeholder="Username" />
+        <input className="p-3 rounded border" type="email" placeholder="Email" />
+        <input className="p-3 rounded border" type="password" placeholder="Password" />
+        <button className="bg-primary text-white px-4 py-2 rounded hover:bg-blue-700">Register</button>
+      </form>
+    </div>
+  );
+}

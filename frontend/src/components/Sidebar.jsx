@@ -1,19 +1,16 @@
-export default function Sidebar({ role }) {
-    const navItems = role === "librarian"
-      ? ["Dashboard", "Manage Books", "Members", "Reports"]
-      : role === "customer"
-        ? ["Dashboard", "My Books", "Profile"]
-        : ["Home", "About Us"];
-  
-    return (
-      <div className="w-64 bg-white shadow-md">
-        <div className="p-4 font-bold text-xl">Library</div>
-        <ul>
-          {navItems.map((item) => (
-            <li key={item} className="p-4 hover:bg-gray-200 cursor-pointer">{item}</li>
-          ))}
-        </ul>
+import { Link } from 'react-router-dom';
+
+export default function Sidebar() {
+  return (
+    <div className="bg-primary text-white w-64 h-full p-5 flex flex-col gap-4">
+      <h2 className="text-2xl font-bold mb-6">📚 Library</h2>
+      <Link to="/" className="hover:text-secondary">Dashboard</Link>
+
+      <div className="mt-8">
+        <h3 className="mb-2 font-semibold">Login As</h3>
+        <Link to="/login?role=admin" className="block hover:text-secondary">Librarian</Link>
+        <Link to="/login?role=user" className="block hover:text-secondary">User</Link>
       </div>
-    );
-  }
-  
+    </div>
+  );
+}

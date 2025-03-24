@@ -1,13 +1,22 @@
+import { useSearchParams, Link } from 'react-router-dom';
+
 export default function Login() {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="p-6 bg-white shadow rounded">
-          <h2 className="text-xl font-bold">Login</h2>
-          <input type="text" placeholder="Email" className="w-full p-2 border mt-2" />
-          <input type="password" placeholder="Password" className="w-full p-2 border mt-2" />
-          <button className="w-full bg-blue-500 text-white p-2 mt-4">Login</button>
-        </div>
-      </div>
-    );
-  }
-  
+  const [params] = useSearchParams();
+  const role = params.get('role');
+
+  return (
+    <div className="p-6 text-gray-900 dark:text-white">
+      <h1 className="text-2xl font-bold mb-4">Login as {role === 'admin' ? 'Librarian' : 'User'}</h1>
+
+      <form className="flex flex-col gap-4 max-w-md">
+        <input className="p-3 rounded border" type="text" placeholder="Username" />
+        <input className="p-3 rounded border" type="password" placeholder="Password" />
+        <button className="bg-primary text-white px-4 py-2 rounded hover:bg-blue-700">Login</button>
+      </form>
+
+      {role === 'user' && (
+        <p className="mt-4">Don't have an account? <Link to="/register" className="text-blue-500">Register</Link></p>
+      )}
+    </div>
+  );
+}

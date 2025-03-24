@@ -1,5 +1,5 @@
 import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/TopBar";
 import StatsCard from "../components/StatsCard";
 import { useState } from "react";
 
@@ -12,8 +12,8 @@ export default function Dashboard() {
       <div className="flex-1">
         <Navbar role={role} setRole={setRole} />
         <main className="p-6">
-          {role === "librarian" && <h2 className="text-2xl font-bold">Librarian Dashboard</h2>}
-          {role === "customer" && <h2 className="text-2xl font-bold">Customer Dashboard</h2>}
+          {role === "librarian" && <h2 className="text-2xl font-bold">Dashboard</h2>}
+          {role === "customer" && <h2 className="text-2xl font-bold">Dashboard</h2>}
           {role === "guest" && <h2 className="text-2xl font-bold">Welcome to Library System</h2>}
           <div className="grid grid-cols-3 gap-6 mt-6">
             <StatsCard title="Total Books" value="1245" />
