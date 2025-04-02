@@ -66,32 +66,48 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody User user) {
+        System.out.println("here in login method");
+        System.out.println("Received Identifier: " + user.getIdentifier());
+
+        // Determine the username from identifier
+        String identifier = user.getIdentifier();
+        if (identifier.contains("@")) {
+            user.setUsername(userService.getUsernameByEmail(identifier)); // Convert email to username
+        } else if (identifier.matches("\\d+")) {
+            user.setUsername(userService.getUsernameByPhone(identifier)); // Convert phone to username
+        } else {
+            user.setUsername(identifier); // Already a username
+        }
+
+        System.out.println("Resolved Username: " + user.getUsername());
+
         boolean isAuthenticated = userService.verify(user); // Now using the updated verify method
         System.out.println("Authenticating");
-    
+
         if (isAuthenticated) {
             System.out.println("User authenticated");
-    
-            // Get the user's role (assuming it's stored somewhere or fetched from DB)
+
+            // Get the user's role
             String role = userService.getUserRole(user.getUsername());
             user.setRole(role);
-    
-            // The JWT token generation logic is already handled in the 'verify' method
-            String accessToken = user.getAccessToken(); // Get the generated access token
-            String refreshToken = redisTemplate.opsForValue().get("refresh_token:" + user.getUsername()); // Get the generated refresh token from Redis
-    
+
+            // JWT token generation
+            String accessToken = user.getAccessToken();
+            String refreshToken = redisTemplate.opsForValue().get("refresh_token:" + user.getUsername());
+
             Map<String, String> response = new HashMap<>();
             response.put("message", "Login successful");
-            response.put("accessToken", accessToken);  // Provide access token to the user
-            response.put("refreshToken", refreshToken);  // Provide refresh token as well
+            response.put("accessToken", accessToken);
+            response.put("refreshToken", refreshToken);
             response.put("role", role);
             System.out.println("Role: " + user.getRole());
-    
+
             return ResponseEntity.ok(response);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
         }
     }
+
     
     
     @PostMapping("/refresh")
