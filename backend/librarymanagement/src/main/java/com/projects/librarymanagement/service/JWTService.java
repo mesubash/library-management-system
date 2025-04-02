@@ -7,37 +7,48 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class JWTService {
 
-    StringRedisTemplate redisTemplate;
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Value("${jwt.access-expiration}")
+    private long accessExpiration;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
+
+    private final StringRedisTemplate redisTemplate;
     
     public JWTService(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 
     private static final String BLACKLIST_PREFIX = "blacklist:";
-    private String secretKey;
 
-    public JWTService() throws NoSuchAlgorithmException {
-        // Generate a secret key using HmacSHA256
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
-        SecretKey sk = keyGenerator.generateKey();
-        this.secretKey = Base64.getEncoder().encodeToString(sk.getEncoded());
+
+     // Generate Access Token (short-lived)
+     public String generateAccessToken(String username, String role) {
+        return generateToken(username, role, accessExpiration);
+    }
+
+    // Generate Refresh Token (long-lived)
+    public String generateRefreshToken(String username, String role) {
+        return generateToken(username, role, refreshExpiration);
     }
 
 
-    public String generateToken(String username, String role) {
+    public String generateToken(String username, String role, Long expirationTime) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("role", role);
         return Jwts.builder()
@@ -45,7 +56,7 @@ public class JWTService {
                 .add(claims)
                 .subject(username)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 60 * 60 *300))
+                .expiration(new Date(System.currentTimeMillis() + expirationTime))
                 .and()
                 .signWith(getKey())
                 .compact();
@@ -102,12 +113,22 @@ public class JWTService {
 
     // Check if token is blacklisted
     public boolean isTokenBlacklisted(String token) {
-        return redisTemplate.hasKey(BLACKLIST_PREFIX + token);
+        try {
+            return redisTemplate.hasKey(BLACKLIST_PREFIX + token);
+        } catch (Exception e) {
+            System.err.println("Redis is not available: " + e.getMessage());
+            return false; 
+        }
     }
 
-    // Get SecretKey for signing
     public SecretKey getKey() {
-        byte[] keyBytes = Base64.getDecoder().decode(secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            System.out.println("Loaded JWT Secret Key: '" + secretKey + "'"); // Debug log
+            byte[] keyBytes = Base64.getDecoder().decode(secretKey.trim()); // Decode Base64 key
+            System.out.println("Decoded Key Bytes Length: " + keyBytes.length); // Debug log
+            return Keys.hmacShaKeyFor(keyBytes); // Generate HMAC-SHA key
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid JWT secret key. Ensure it is Base64-encoded.", e);
+        }
     }
 }
