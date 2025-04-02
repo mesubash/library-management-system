@@ -13,6 +13,8 @@ import ContactUs from "./pages/guest/ContactUs";
 import AdminTools from "./pages/admin/AdminTools";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unauthorized from "./pages/auth/Unauthorized";
+import ForgotPasswordPage from "./pages/auth/ForgerPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
         {/* Public & Protected Routes Inside Layout */}
         <Route element={<Layout />}>
