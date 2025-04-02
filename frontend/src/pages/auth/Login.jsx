@@ -1,62 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Login() {
+  const navigate = useNavigate();
+  const location = useLocation(); // Get the previous route (if any)
+
   const [formData, setFormData] = useState({
-    identifier: '',
-    password: '',
-    identifierType: 'email', // Default to email
+    identifier: "",
+    password: "",
+    identifierType: "email", // Default to email
   });
-  const [showSuccess, setShowSuccess] = useState(false);
+
   const [showError, setShowError] = useState(false);
   const [shake, setShake] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleKeyPress = (e) => {
-    // Allow only numbers when identifierType is 'phone'
-    if (formData.identifierType === 'phone' && !/[0-9]/.test(e.key)) {
+    if (formData.identifierType === "phone" && !/[0-9]/.test(e.key)) {
       e.preventDefault();
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate login logic (replace with real API call)
-    const { identifier, password, identifierType } = formData;
-    const isAuthorized =
-      (identifierType === 'email' && identifier === 'user@example.com' && password === 'password123') ||
-      (identifierType === 'phone' && identifier === '1234567890' && password === 'password123');
+    setShowError(false);
+    setErrorMessage("");
 
-    if (isAuthorized) {
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000); // Auto-close after 3 seconds
-    } else {
+    try {
+      const response = await fetch("http://localhost:8080/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          identifier: formData.identifier,
+          password: formData.password,
+          identifierType: formData.identifierType,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store access token and user role in local storage
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("role", data.role);
+
+        // Redirect logic:
+        const redirectPath = location.state?.from || (data.role === "ADMIN" ? "/admin-dashboard" : "/user-dashboard");
+        navigate(redirectPath);
+      } else {
+        setShowError(true);
+        setShake(true);
+        setErrorMessage(data.message || "Invalid credentials");
+
+        // Reset fields but keep identifierType selection
+        setFormData({ ...formData, identifier: "", password: "" });
+
+        setTimeout(() => {
+          setShowError(false);
+          setShake(false);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error("Login Error:", error);
       setShowError(true);
       setShake(true);
-      setFormData({ identifier: '', password: '', identifierType: 'email' }); // Clear fields
-      setTimeout(() => {
-        setShowError(false);
-        setShake(false);
-      }, 3000); // Stop error and shake after 3 seconds
+      setErrorMessage("Server error. Please try again.");
     }
   };
 
   return (
     <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-blue-100 to-white">
-      {/* Success Alert */}
-      {showSuccess && (
-        <div className="fixed top-4 right-4 z-50 p-4 bg-green-600 text-white rounded-md shadow-lg animate-slide-in-right">
-          Login successful! Welcome back to the Library.
-        </div>
-      )}
-
-      {/* Error Alert */}
       {showError && (
         <div className="fixed top-4 right-4 z-50 p-4 bg-red-600 text-white rounded-md shadow-lg animate-slide-in-right">
-          Unauthorized: Invalid {formData.identifierType} or password.
+          {errorMessage}
         </div>
       )}
 
@@ -68,12 +90,11 @@ export default function Login() {
           Log in to access your library account
         </p>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
-                Email or Phone Number
+                Select Login Type & Enter Details
               </label>
               <div className="flex mt-1">
                 <select
@@ -84,19 +105,26 @@ export default function Login() {
                 >
                   <option value="email">Email</option>
                   <option value="phone">Phone</option>
+                  <option value="username">Username</option>
                 </select>
                 <input
-                  type={formData.identifierType === 'email' ? 'email' : 'tel'}
+                  type={formData.identifierType === "email" ? "email" : "text"}
                   id="identifier"
                   name="identifier"
                   value={formData.identifier}
                   onChange={handleChange}
-                  onKeyPress={handleKeyPress} // Restrict to numbers for phone
-                  pattern={formData.identifierType === 'phone' ? '[0-9]*' : undefined} // Enforce numbers for phone
+                  onKeyPress={handleKeyPress}
+                  pattern={formData.identifierType === "phone" ? "[0-9]*" : undefined}
                   className={`flex-1 p-3 rounded-r-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent ${
-                    shake ? 'animate-shake' : ''
+                    shake ? "animate-shake" : ""
                   }`}
-                  placeholder={formData.identifierType === 'email' ? 'john.doe@example.com' : '(123) 456-7890'}
+                  placeholder={
+                    formData.identifierType === "email"
+                      ? "john.doe@example.com"
+                      : formData.identifierType === "phone"
+                      ? "1234567890"
+                      : "YourUsername"
+                  }
                   required
                 />
               </div>
@@ -106,29 +134,17 @@ export default function Login() {
                 Password
               </label>
               <input
-                type={showPassword ? 'text' : 'password'}
+                type="password"
                 id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 className={`mt-1 w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent ${
-                  shake ? 'animate-shake' : ''
+                  shake ? "animate-shake" : ""
                 }`}
                 placeholder="••••••••"
                 required
               />
-              <div className="mt-2 flex items-center">
-                <input
-                  type="checkbox"
-                  id="showPassword"
-                  checked={showPassword}
-                  onChange={() => setShowPassword(!showPassword)}
-                  className="h-4 w-4 text-green-600 focus:ring-green-400 border-gray-300 rounded"
-                />
-                <label htmlFor="showPassword" className="ml-2 text-sm text-gray-600">
-                  Show Password
-                </label>
-              </div>
             </div>
           </div>
           <button
@@ -138,27 +154,6 @@ export default function Login() {
             Log In
           </button>
         </form>
-
-        {/* Accent Links */}
-        <p className="mt-6 text-center text-sm text-gray-600">
-          Don’t have an account?{' '}
-          <a href="/register" className="text-purple-500 hover:text-purple-600 font-medium">
-            Register here
-          </a>
-        </p>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Forgot password?{' '}
-          <a href="/forgot-password" className="text-purple-500 hover:text-purple-600 font-medium">
-            Reset it
-          </a>
-        </p>
-
-        {/* Light Green Accent */}
-        <div className="mt-6 text-center">
-          <span className="inline-block px-3 py-1 text-xs font-medium text-green-800 bg-lightgreen-100 rounded-full">
-            Secure Login
-          </span>
-        </div>
       </div>
     </div>
   );

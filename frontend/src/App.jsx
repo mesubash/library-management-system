@@ -1,15 +1,15 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Layout from './components/Layout'
-import Home from './pages/guest/Home'
-import Books from './pages/Books'
-import Login from './pages/auth/Login'
-import Register from './pages/auth/Register'
-import AdminDashboard from './pages/admin/AdminDashboard'
-import UserDashboard from './pages/user/UserDashboard'
-import AdminTools from './pages/admin/AdminTools'
-import Profile from './pages/Profile'
-import AboutUs from './pages/guest/AboutUs'
-import ContactUs from './pages/guest/ContactUs'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import Home from "./pages/guest/Home";
+import Books from "./pages/Books";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import UserDashboard from "./pages/user/UserDashboard";
+import Profile from "./pages/Profile";
+import AboutUs from "./pages/guest/AboutUs";
+import ContactUs from "./pages/guest/ContactUs";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
@@ -17,17 +17,23 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
           <Route path="/books" element={<Books />} />
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/contact-us" element={<ContactUs />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/user-dashboard" element={<UserDashboard />} />
-          <Route path="/admin-tools" element={<AdminTools />} />
-          <Route path="/profile" element={<Profile />} />
+
+          <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          </Route>
+
+          <Route element={<ProtectedRoute allowedRoles={["USER"]} />}>
+            <Route path="/user-dashboard" element={<UserDashboard />} />
+            <Route path="/profile" element={<Profile />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
