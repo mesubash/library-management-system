@@ -22,6 +22,12 @@ public class User {
     private String role; // e.g., admin, librarian, member
 
 
+    private String accessToken; // To store the access token
+    private String refreshToken; // To store the refresh token
+  
+     
+
+
     public User() {
     }
 
@@ -90,6 +96,21 @@ public class User {
     }
     public void setRole(String role) {
         this.role = role;
+    }
+     public String getAccessToken() {
+        return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
     
 

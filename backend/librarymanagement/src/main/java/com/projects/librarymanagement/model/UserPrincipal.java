@@ -4,7 +4,7 @@ package com.projects.librarymanagement.model;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
+import com.projects.librarymanagement.model.User;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -19,7 +19,10 @@ public class UserPrincipal implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Dynamically assign the authority based on the user's role
-        String role = "user"; 
+        String role = "USER"; // Default role
+        if (user.getRole() != null) {
+            role = user.getRole();
+        }
         return Collections.singleton(new SimpleGrantedAuthority(role));
     }
 
