@@ -96,4 +96,13 @@ public class UserService {
         User user = userRepository.findByUsername(username);
         return user != null ? user.getRole() : null;
     }
+
+    public String getUsernameByEmail(String email) {
+        User user = userRepository.findByEmail(email);
+        return user != null ? user.getUsername() : null;
+    }
+    public String getUsernameByPhone(String phone) {
+        User user = userRepository.findByPhoneNumber(phone);
+        return user != null ? user.getUsername() : null;
+    }
 }
