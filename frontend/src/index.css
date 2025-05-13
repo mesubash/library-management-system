@@ -1,88 +1,153 @@
-@import "tailwindcss";
 
-/* Light Theme */
-body {
-    background-color: #E2E1DF; /* Slightly off-white */
-    color: #1f2937;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 160 84% 39%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 160 84% 39%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 160 84% 39%;
+
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
   }
   
-  .header, .sidebar {
-    background-color: 	#bbc4c2; /* Light blue-gray */
-    border-color: #e2e8f0;
+  /* Prevent content from being hidden under fixed header on anchor navigation */
+  html {
+    scroll-padding-top: 80px;
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent hover:text-accent-foreground;
   }
 
-/* Dark Theme */
-.dark body {
-  background-color: #111827;
-  color: #f3f4f6;
+  .sidebar-link.active {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  .stat-card {
+    @apply flex flex-col rounded-lg border bg-card p-5 shadow-sm transition-all hover:shadow-md;
+  }
+
+  .book-card {
+    @apply flex flex-col rounded-lg border bg-card shadow-sm transition-all hover:shadow-md hover:translate-y-[-2px];
+  }
+  
+  /* Responsive container classes */
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4;
+  }
+  
+  .responsive-stats-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
+  }
+  
+  .page-container {
+    @apply space-y-4 sm:space-y-6 md:space-y-8;
+  }
 }
 
-.dark .header, .dark .sidebar {
-  background-color: #1f2937;
-  border-color: #374151;
-}
+@layer utilities {
+  /* Additional responsive utilities */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
 
-/* Sidebar */
-.sidebar {
-  height: 100vh;
-  width: 250px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Links */
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  color: #374151;
-  margin: 0.25rem 0;
-}
-
-.dark .sidebar-link {
-  color: #d1d5db;
-}
-
-.sidebar-link:hover {
-  background-color: #e0f2fe; /* Light blue */
-  color: #0369a1;
-}
-
-.dark .sidebar-link:hover {
-  background-color: #374151;
-}
-
-/* Buttons */
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  transition: background-color 0.2s;
-}
-
-.btn-primary:hover {
-  background-color: #2563eb;
-}
-
-.btn-secondary {
-  background-color: #10b981;
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover {
-  background-color: #059669;
-}
-
-/* Shadows for light mode */
-.card {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.dark .card {
-  box-shadow: none;
+  /* Add max-width for content overflow prevention */
+  .content-container {
+    @apply w-full max-w-full overflow-x-hidden;
+  }
 }
