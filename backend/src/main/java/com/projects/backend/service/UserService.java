@@ -73,9 +73,7 @@ public class UserService {
                 // Store refresh token in Redis for handling refresh logic
                 redisTemplate.opsForValue().set("refresh_token:" + existingUser.getUsername(), refreshToken, 30, TimeUnit.DAYS);
     
-                // Set tokens on the user object
-                user.setAccessToken(accessToken);
-                user.setRefreshToken(refreshToken);
+
     
                 return true; // Authentication successful
             } else {

@@ -92,13 +92,12 @@ public class AuthController {
             user.setRole(role);
 
             // JWT token generation
-            String accessToken = user.getAccessToken();
             String refreshToken = redisTemplate.opsForValue().get("refresh_token:" + user.getUsername());
 
             Map<String, String> response = new HashMap<>();
             response.put("message", "Login successful");
-            response.put("accessToken", accessToken);
             response.put("refreshToken", refreshToken);
+            response.put("accessToken", jwtService.generateAccessToken(user.getUsername(), role));
             response.put("role", role);
             System.out.println("Role: " + user.getRole());
 
