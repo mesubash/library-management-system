@@ -1,22 +1,53 @@
-
 import React from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
-import { LogOut, Search } from "lucide-react";
+import { LogOut, Search, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/Logo";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
-export function Header() {
+interface HeaderProps {
+  onSidebarMenuClick?: () => void;
+  sidebarExpanded?: boolean;
+  windowWidth?: number;
+  sidebarWidth?: number;
+}
+
+export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024, sidebarWidth = 250 }: HeaderProps) {
   const { isAuthenticated, logout, username, role } = useAuth();
 
+  // Responsive style: on mobile, no margin; on desktop, marginLeft = sidebarWidth
+  const headerStyle =
+    windowWidth >= 768
+      ? { left: sidebarWidth, right: 0, width: `calc(100% - ${sidebarWidth}px)` }
+      : { left: 0, right: 0, width: '100%' };
+
   return (
-    <header className="h-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-30 fixed top-0 left-0 right-0 shadow-sm transition-all duration-200">
+    <header
+      className="h-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-30 fixed top-0 flex items-center shadow-sm transition-all duration-200"
+      style={headerStyle}
+    >
       <div className="container flex h-full items-center justify-between px-4">
         <div className="flex items-center gap-4">
+          {/* Sidebar expand/collapse button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mr-2"
+            onClick={onSidebarMenuClick}
+            aria-label="Toggle sidebar"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
           <Logo className="block" />
-          <ThemeToggle />
           <div className="hidden md:flex ml-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -28,25 +59,35 @@ export function Header() {
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Rightmost: Profile info, ThemeToggle, then avatar dropdown */}
+        <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+          {isAuthenticated && (
+            <div className="hidden sm:flex flex-col items-end mr-2">
+              <span className="text-sm font-medium">{username}</span>
+              <span className="text-xs text-muted-foreground capitalize">{role} Account</span>
+            </div>
+          )}
+          <ThemeToggle />
           {isAuthenticated ? (
-            <>
-              <div className="hidden sm:flex flex-col items-end">
-                <span className="text-sm font-medium">{username}</span>
-                <span className="text-xs text-muted-foreground capitalize">{role} Account</span>
-              </div>
-              <UserAvatar />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={logout}
-                className="rounded-full hover:bg-muted/80 transition-colors"
-                aria-label="Log out"
-              >
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full ml-2">
+                  <UserAvatar />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <a href="/profile">Profile</a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="/settings">Settings</a>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="text-red-600 cursor-pointer">
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Button 
               variant="default"

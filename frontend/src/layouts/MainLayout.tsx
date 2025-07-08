@@ -1,43 +1,62 @@
-
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 export default function MainLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // for mobile
+  const [sidebarExpanded, setSidebarExpanded] = useState(true); // for desktop
+  const sidebarWidth = sidebarExpanded ? 250 : 64;
+  const headerHeight = 80; // h-20 = 80px
+
+  // Responsive marginLeft: 0 on mobile, sidebarWidth on md+
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 1024
+  );
+  React.useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Handler for sidebar toggle in app bar
+  const handleSidebarMenuClick = () => {
+    if (windowWidth < 768) {
+      setSidebarOpen(true);
+    } else {
+      setSidebarExpanded((prev) => !prev);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <div className="flex flex-1 pt-20">
-        {/* Mobile sidebar toggle button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="fixed bottom-4 right-4 z-50 md:hidden bg-primary text-primary-foreground shadow-md rounded-full h-12 w-12"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          <Menu className="h-6 w-6" />
-          <span className="sr-only">Toggle Sidebar</span>
-        </Button>
-
-        {/* Responsive sidebar */}
-        <div className={`${sidebarOpen ? 'fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden' : 'hidden'}`} onClick={() => setSidebarOpen(false)} />
-        <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-        
-        {/* Main content - responsive padding */}
-        <main className="flex-1 w-full transition-all duration-300 ease-in-out
-          pb-8 pl-0 md:pl-[250px]">
+    <div className="min-h-screen">
+      <Header
+        onSidebarMenuClick={handleSidebarMenuClick}
+        sidebarExpanded={sidebarExpanded}
+        windowWidth={windowWidth}
+        sidebarWidth={sidebarWidth}
+      />
+      <Sidebar
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+        expanded={sidebarExpanded}
+        onExpandChange={setSidebarExpanded}
+      />
+      <div
+        className="flex flex-col min-h-screen transition-all duration-300"
+        style={{
+          marginLeft: windowWidth >= 768 ? sidebarWidth : 0,
+          paddingTop: headerHeight,
+        }}
+      >
+        <main className="flex-1 w-full pb-8">
           <div className="container p-4 md:p-6">
             <Outlet />
           </div>
         </main>
+        <Footer />
       </div>
-      <Footer />
     </div>
   );
 }
