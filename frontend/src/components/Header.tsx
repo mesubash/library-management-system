@@ -5,7 +5,6 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
 import { LogOut, Search, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Logo } from "@/components/Logo";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -47,7 +46,7 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <Logo className="block" />
+          {/* Removed Logo from app bar */}
           <div className="hidden md:flex ml-4">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -60,18 +59,18 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
           </div>
         </div>
         {/* Rightmost: Profile info, ThemeToggle, then avatar dropdown */}
-        <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+          <ThemeToggle />
           {isAuthenticated && (
-            <div className="hidden sm:flex flex-col items-end mr-2">
+            <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-medium">{username}</span>
               <span className="text-xs text-muted-foreground capitalize">{role} Account</span>
             </div>
           )}
-          <ThemeToggle />
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full ml-2">
+                <Button variant="ghost" size="icon" className="rounded-full">
                   <UserAvatar />
                 </Button>
               </DropdownMenuTrigger>
