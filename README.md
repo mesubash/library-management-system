@@ -6,9 +6,7 @@ This is the **frontend** for the Library Management System, built with React (Vi
 
 The frontend is deployed and accessible at:
 
-```
-[Vercel](https://library-management-system-two-fawn.vercel.app/)
-```
+[Library-Management-System](https://library-management-system-two-fawn.vercel.app/)
 
 > **Note:**
 > - The backend API is **not yet deployed** or may be under development.
