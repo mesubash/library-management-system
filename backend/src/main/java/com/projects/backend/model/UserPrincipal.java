@@ -1,31 +1,24 @@
 package com.projects.backend.model;
 
-
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-@RequiredArgsConstructor
+
 
 public class UserPrincipal implements UserDetails {
-
     private final User user;
 
-
+    public UserPrincipal(User user) {
+        this.user = user;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Dynamically assign the authority based on the user's role
-        String role = "USER"; // Default role
-        if (user.getRole() != null) {
-            role = user.getRole();
-        }
-        return Collections.singleton(new SimpleGrantedAuthority(role));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().toUpperCase()));
     }
-
 
     @Override
     public String getPassword() {
@@ -34,7 +27,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getUsername() {
-        return user.getUsername();
+        return user.getEmail();
     }
 
     @Override
@@ -56,4 +49,41 @@ public class UserPrincipal implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    public Long getId() {
+        return user.getId();
+    }
+    
+
+    public String getName() {
+        return user.getName();
+    }
+    public String getEmail() {
+        return user.getEmail();
+    }
+    public String getPhoneNumber() {
+        return user.getPhoneNumber();
+    }
+    public String getAddress() {
+        return user.getAddress();
+    }
+    public String getRole() {
+        return user.getRole();
+    }
+    public User getUser() {
+        return user;
+    }
+    public void setPassword(String password) {
+        user.setPassword(password);
+    }
+    public void setPhoneNumber(String phoneNumber) {
+        user.setPhoneNumber(phoneNumber);
+    }
+    public void setAddress(String address) {
+        user.setAddress(address);
+    }
+    public void setRole(String role) {
+        user.setRole(role);
+    }
+
 }
