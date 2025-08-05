@@ -5,6 +5,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
 import { LogOut, Search, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -76,10 +77,10 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <a href="/profile">Profile</a>
+                  <Link to="/profile">Profile</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <a href="/settings">Settings</a>
+                  <Link to="/settings">Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="text-red-600 cursor-pointer">
@@ -92,9 +93,9 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
               variant="default"
               size="sm" 
               className="rounded-full px-4 bg-lms-green hover:bg-lms-green-dark shadow-sm hover:shadow transition-all"
-              onClick={() => window.location.href = "/login"}
+              asChild
             >
-              Login
+              <Link to="/login">Login</Link>
             </Button>
           )}
         </div>
