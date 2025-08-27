@@ -12,9 +12,11 @@ interface BookCardProps {
   book: Book;
   className?: string;
   onBorrow?: (book: Book) => void;
+  onEdit?: (book: Book) => void;
+  onManage?: (book: Book) => void;
 }
 
-export function BookCard({ book, className, onBorrow }: BookCardProps) {
+export function BookCard({ book, className, onBorrow, onEdit, onManage }: BookCardProps) {
   const { role, profile } = useAuth();
   const { records } = useBorrowRecords();
   const isAdmin = role === "admin";
@@ -67,8 +69,20 @@ export function BookCard({ book, className, onBorrow }: BookCardProps) {
       <CardFooter className="px-4 pb-4 pt-0 flex gap-2">
         {isAdmin ? (
           <>
-            <Button variant="outline" size="sm" className="flex-1">Edit</Button>
-            <Button variant="default" size="sm" className="flex-1 bg-lms-blue hover:bg-lms-blue-dark">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex-1"
+              onClick={() => onEdit && onEdit(book)}
+            >
+              Edit
+            </Button>
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="flex-1 bg-lms-blue hover:bg-lms-blue-dark"
+              onClick={() => onManage && onManage(book)}
+            >
               Manage
             </Button>
           </>

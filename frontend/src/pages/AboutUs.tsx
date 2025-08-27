@@ -17,9 +17,10 @@ export default function AboutUs() {
           <div className="space-y-6">
             <h2 className="text-2xl font-bold">Our Mission</h2>
             <p className="text-muted-foreground">
-              The Library Management System aims to provide an accessible, efficient, and modern platform for both 
-              librarians and patrons. Our mission is to promote literacy, lifelong learning, and community 
-              engagement by making knowledge resources readily available to all.
+              The Library Management System aims to provide an accessible, efficient, and modern platform for 
+              libraries across Nepal. Our mission is to promote literacy, lifelong learning, and community 
+              engagement by making knowledge resources readily available to all Nepali communities, from the 
+              bustling cities to the remote mountain villages.
             </p>
             
             <div className="relative h-60 overflow-hidden rounded-lg mt-8">
@@ -34,16 +35,17 @@ export default function AboutUs() {
               <div>
                 <h3 className="text-xl font-semibold mb-4">Our History</h3>
                 <p className="text-muted-foreground">
-                  Established in 2010, our library has grown from a small collection of books to a comprehensive 
-                  digital platform that serves thousands of readers around the world. We have continuously evolved 
-                  our services to meet the changing needs of our community, embracing new technologies while 
+                  Established in 2020, our library management system was created to serve the diverse communities 
+                  of Nepal. We have grown from supporting a few local libraries to becoming a comprehensive 
+                  digital platform that serves libraries across the beautiful country of Nepal. We continuously evolve 
+                  our services to meet the changing needs of Nepali communities, embracing new technologies while 
                   maintaining our commitment to making knowledge accessible.
                 </p>
                 <p className="text-muted-foreground mt-4">
-                  Today, we are proud to offer a vast collection of books across various genres, providing both 
-                  physical and digital resources to our members. Our dedicated team of librarians and staff work 
-                  tirelessly to ensure that everyone who walks through our doors or accesses our digital platform 
-                  finds what they are looking for.
+                  Today, we are proud to support libraries from Kathmandu to rural villages, offering a vast 
+                  collection of books in Nepali and English. Our dedicated team works tirelessly to ensure that 
+                  every library using our platform can serve their community effectively, promoting education 
+                  and literacy throughout Nepal.
                 </p>
               </div>
               
@@ -119,9 +121,9 @@ export default function AboutUs() {
                     </div>
                     <h3 className="font-semibold text-lg mb-2">Location</h3>
                     <div className="space-y-1 text-sm">
-                      <p>123 Library Street</p>
-                      <p>Booktown, BK 12345</p>
-                      <p>United States</p>
+                      <p>Kathmandu, Nepal</p>
+                      <p>Bagmati Province</p>
+                      <p>Nepal</p>
                     </div>
                   </div>
                 </CardContent>
@@ -135,9 +137,9 @@ export default function AboutUs() {
                     </div>
                     <h3 className="font-semibold text-lg mb-2">Contact Us</h3>
                     <div className="space-y-1 text-sm">
-                      <p>Phone: (555) 123-4567</p>
-                      <p>Email: info@library.com</p>
-                      <p>Support: help@library.com</p>
+                      <p>Developer: Subash Singh Dhami</p>
+                      <p>Email: contact@subashsdhami.com.np</p>
+                      <p>Support: contact@subashsdhami.com.np</p>
                     </div>
                   </div>
                 </CardContent>
@@ -148,10 +150,10 @@ export default function AboutUs() {
               <h3 className="text-xl font-semibold mb-4">Our Team</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {[
-                  { name: "Sarah Johnson", role: "Head Librarian", img: "https://i.pravatar.cc/300?img=1" },
-                  { name: "Michael Chang", role: "Technical Director", img: "https://i.pravatar.cc/300?img=3" },
-                  { name: "Emily Rodriguez", role: "Member Services", img: "https://i.pravatar.cc/300?img=5" },
-                  { name: "David Patel", role: "Collection Manager", img: "https://i.pravatar.cc/300?img=7" },
+                  { name: "Subash Singh Dhami", role: "Lead Developer", img: "https://i.pravatar.cc/300?img=1" },
+                  { name: "Nepal Library Team", role: "Support Team", img: "https://i.pravatar.cc/300?img=3" },
+                  { name: "Community Librarians", role: "Local Partners", img: "https://i.pravatar.cc/300?img=5" },
+                  { name: "Tech Support", role: "System Maintenance", img: "https://i.pravatar.cc/300?img=7" },
                 ].map((member, index) => (
                   <div key={index} className="flex flex-col items-center">
                     <div className="w-24 h-24 rounded-full overflow-hidden mb-3">

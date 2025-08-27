@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useBooks, useBorrowRecords, useCategories } from "@/hooks/useLibraryData";
 import { supabase } from "@/lib/supabase";
 import { getPlaceholderImage } from "@/lib/imageUpload";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ export default function Books() {
   const { role, profile } = useAuth();
   const isAdmin = role === "admin";
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const { books, loading } = useBooks();
   const { borrowBook, records, refetch: refetchRecords } = useBorrowRecords();
@@ -52,14 +53,20 @@ export default function Books() {
       return;
     }
     
-    // Count user's active requests/borrows from the records
-    const userActiveCount = records.filter(record => 
+    const userRecords = records.filter(record => 
       record.user_id === profile.id && 
-      ['requested', 'approved', 'borrowed'].includes(record.status)
-    ).length;
-    
-    setCurrentBorrowCount(userActiveCount);
-  }, [profile?.id, records]); // React to changes in records
+      (record.status === 'borrowed' || record.status === 'requested' || record.status === 'approved')
+    );
+    setCurrentBorrowCount(userRecords.length);
+  }, [records, profile?.id]);
+
+  // Handle URL search parameters
+  useEffect(() => {
+    const urlSearchTerm = searchParams.get('search');
+    if (urlSearchTerm) {
+      setSearchTerm(urlSearchTerm);
+    }
+  }, [searchParams]);
   
   // Filter books based on search term, category and availability
   const filteredBooks = books.filter(book => {

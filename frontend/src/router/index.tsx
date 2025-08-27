@@ -8,9 +8,13 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import UserDashboard from "@/pages/UserDashboard";
 import Books from "@/pages/Books";
 import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
 import AdminTools from "@/pages/AdminTools";
 import AboutUs from "@/pages/AboutUs";
 import ContactUs from "@/pages/ContactUs";
+import TermsOfService from "@/pages/TermsOfService";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import CookiePolicy from "@/pages/CookiePolicy";
 import NotFound from "@/pages/NotFound";
 import { useAuth } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -50,6 +54,12 @@ export default function AppRouter() {
           </ProtectedRoute>
         } />
         
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        } />
+
         <Route path="/admin-dashboard" element={
           <ProtectedRoute requireAdmin={true}>
             <AdminDashboard />
@@ -74,6 +84,11 @@ export default function AppRouter() {
             {role === "admin" ? <Navigate to="/admin-dashboard" replace /> : <UserDashboard />}
           </ProtectedRoute>
         } />
+
+        {/* Footer Pages */}
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/cookies" element={<CookiePolicy />} />
       </Route>
       
       {/* 404 Route */}

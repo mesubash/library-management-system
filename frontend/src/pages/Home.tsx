@@ -9,13 +9,16 @@ import { useBooks, useBorrowRecords } from "@/hooks/useLibraryData";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, User } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
 export default function Home() {
-  const { isAuthenticated, profile } = useAuth();
+  const { isAuthenticated, profile, role } = useAuth();
   const { books, loading } = useBooks();
   const { borrowBook, refetch: refetchRecords } = useBorrowRecords();
+  const { toast } = useToast();
   const featuredBooks = books.slice(0, 6);
+  const isAdmin = role === "admin";
 
   // Request dialog state
   const [selectedBook, setSelectedBook] = useState<any>(null);
@@ -48,6 +51,25 @@ export default function Home() {
   const openBorrowDialog = (book: any) => {
     setSelectedBook(book);
     setIsBorrowDialogOpen(true);
+  };
+
+  // Admin functions
+  const handleEditBook = (book: any) => {
+    toast({
+      title: "Edit Book",
+      description: `Redirecting to edit ${book.title}...`,
+    });
+    // TODO: Implement edit book functionality or redirect to admin tools
+    window.location.href = `/admin-tools?edit=${book.id}`;
+  };
+
+  const handleManageBook = (book: any) => {
+    toast({
+      title: "Manage Book",
+      description: `Managing ${book.title}...`,
+    });
+    // TODO: Implement manage book functionality
+    window.location.href = `/admin-tools?manage=${book.id}`;
   };
 
   return (
@@ -93,7 +115,13 @@ export default function Home() {
             ))
           ) : (
             featuredBooks.map((book) => (
-              <BookCard key={book.id} book={book} onBorrow={openBorrowDialog} />
+              <BookCard 
+                key={book.id} 
+                book={book} 
+                onBorrow={isAdmin ? undefined : openBorrowDialog}
+                onEdit={isAdmin ? handleEditBook : undefined}
+                onManage={isAdmin ? handleManageBook : undefined}
+              />
             ))
           )}
         </div>

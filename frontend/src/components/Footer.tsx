@@ -70,10 +70,10 @@ export function Footer() {
           <div>
             <h4 className="font-medium text-lg mb-3 md:mb-4">Contact</h4>
             <address className="not-italic text-sm space-y-2 text-muted-foreground">
-              <p>123 Library Street</p>
-              <p>Booktown, BK 12345</p>
-              <p>Email: contact@library.com</p>
-              <p>Phone: (555) 123-4567</p>
+              <p>Kathmandu, Nepal</p>
+              <p>Developer: Subash Singh Dhami</p>
+              <p>Email: contact@subashsdhami.com.np</p>
+              <p>Library Management System</p>
             </address>
           </div>
         </div>

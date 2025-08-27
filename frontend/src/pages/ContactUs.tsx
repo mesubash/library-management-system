@@ -50,7 +50,7 @@ export default function ContactUs() {
           <CardContent className="p-6">
             <h2 className="text-xl font-semibold mb-4">Get in Touch</h2>
             <p className="text-muted-foreground mb-6">
-              Have a question or feedback about our library services? We'd love to hear from you!
+              Have a question or feedback about our library management system? We'd love to hear from libraries across Nepal!
             </p>
             
             <div className="space-y-6">
@@ -61,9 +61,9 @@ export default function ContactUs() {
                 <div>
                   <h3 className="font-medium">Our Location</h3>
                   <p className="text-sm text-muted-foreground">
-                    123 Library Street<br />
-                    Booktown, BK 12345<br />
-                    United States
+                    Kathmandu, Nepal<br />
+                    Bagmati Province<br />
+                    Nepal
                   </p>
                 </div>
               </div>
@@ -75,8 +75,8 @@ export default function ContactUs() {
                 <div>
                   <h3 className="font-medium">Email Us</h3>
                   <p className="text-sm text-muted-foreground">
-                    info@library.com<br />
-                    support@library.com
+                    contact@subashsdhami.com.np<br />
+                    Developer: Subash Singh Dhami
                   </p>
                 </div>
               </div>
@@ -86,10 +86,10 @@ export default function ContactUs() {
                   <Phone className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="font-medium">Call Us</h3>
+                  <h3 className="font-medium">Developer Contact</h3>
                   <p className="text-sm text-muted-foreground">
-                    (555) 123-4567<br />
-                    Mon-Fri, 9:00 AM - 6:00 PM
+                    Subash Singh Dhami<br />
+                    Nepal Standard Time (NST)
                   </p>
                 </div>
               </div>
@@ -191,17 +191,17 @@ export default function ContactUs() {
       
       <Card>
         <CardContent className="p-6">
-          <h2 className="text-xl font-semibold mb-6">Find Us</h2>
+          <h2 className="text-xl font-semibold mb-6">Find Us in Nepal</h2>
           <div className="relative h-[400px] w-full bg-muted rounded-lg overflow-hidden">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d48376.60768981954!2d-73.9845156143392!3d40.75849833922266!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c2590099a8a8a9%3A0xa4a37b097f83f389!2sNew%20York%20Public%20Library%20-%20Stephen%20A.%20Schwarzman%20Building!5e0!3m2!1sen!2sus!4v1714153262897!5m2!1sen!2sus"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d56516.27593718441!2d85.29098758961181!3d27.708317042155654!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb198a307baabf%3A0xb5137c1bf18db1ea!2sKathmandu%2C%20Nepal!5e0!3m2!1sen!2sus!4v1714153262897!5m2!1sen!2sus"
               width="100%"
               height="100%"
               style={{ border: 0 }}
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              title="Map"
+              title="Nepal Map"
             ></iframe>
           </div>
           

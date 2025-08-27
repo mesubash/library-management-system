@@ -11,7 +11,8 @@ import {
   LogIn, 
   Settings, 
   User,
-  Menu
+  Menu,
+  Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,9 +43,10 @@ export function Sidebar({ open, onOpenChange, expanded = true, onExpandChange }:
       return [
         { href: "/", label: "Home", icon: Home },
         { href: "/admin-dashboard", label: "Admin Dashboard", icon: LayoutDashboard },
-        { href: "/admin-tools", label: "Admin Tools", icon: Settings },
+        { href: "/admin-tools", label: "Admin Tools", icon: Wrench },
         { href: "/books", label: "Books", icon: Book },
         { href: "/profile", label: "Profile", icon: User },
+        { href: "/settings", label: "Settings", icon: Settings },
       ];
     }
     
@@ -54,6 +56,7 @@ export function Sidebar({ open, onOpenChange, expanded = true, onExpandChange }:
       { href: "/dashboard", label: "My Dashboard", icon: LayoutDashboard },
       { href: "/books", label: "Books", icon: Book },
       { href: "/profile", label: "Profile", icon: User },
+      { href: "/settings", label: "Settings", icon: Settings },
     ];
   };
   

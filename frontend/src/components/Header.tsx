@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
 import { LogOut, Search, Menu } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -23,6 +23,15 @@ interface HeaderProps {
 
 export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024, sidebarWidth = 250 }: HeaderProps) {
   const { isAuthenticated, logout, username, role } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      navigate(`/books?search=${encodeURIComponent(searchTerm.trim())}`);
+    }
+  };
 
   // Responsive style: on mobile, no margin; on desktop, marginLeft = sidebarWidth
   const headerStyle =
@@ -49,14 +58,16 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
           </Button>
           {/* Removed Logo from app bar */}
           <div className="hidden md:flex ml-4">
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
                 type="search" 
                 placeholder="Search library..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-[200px] lg:w-[300px] pl-8 rounded-full bg-muted"
               />
-            </div>
+            </form>
           </div>
         </div>
         {/* Rightmost: Profile info, ThemeToggle, then avatar dropdown */}
