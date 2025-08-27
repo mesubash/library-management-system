@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,702 +6,818 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { BookOpenText, FileSpreadsheet, Upload, UserRound, Users } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { BookOpen, FileSpreadsheet, Upload, UserRound, Users, Edit, Trash2, Plus, Download, Eye, Search } from "lucide-react";
+import { useBooks, useCategories, useBorrowRecords } from "@/hooks/useLibraryData";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
+import { BorrowRecord } from "@/types/book";
+import { getPlaceholderImage } from "@/lib/imageUpload";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminTools() {
+  const { books, addBook, updateBook, deleteBook } = useBooks();
+  const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
+  const { records } = useBorrowRecords();
+  const { role } = useAuth();
+  const { toast } = useToast();
+
+  // Book Management State
+  const [newBook, setNewBook] = useState({
+    title: "",
+    author: "",
+    isbn: "",
+    published_year: new Date().getFullYear(),
+    total_copies: 1,
+    category_id: ""
+  });
+  const [editingBook, setEditingBook] = useState<any>(null);
+  const [isAddingBook, setIsAddingBook] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [bookToDelete, setBookToDelete] = useState<any>(null);
+
+  // Category Management State
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+
+  // User Management State
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Borrowed History State
+  const [borrowedHistory, setBorrowedHistory] = useState<BorrowRecord[]>([]);
+  const [selectedBookHistory, setSelectedBookHistory] = useState<any>(null);
+  const [historySearchTerm, setHistorySearchTerm] = useState("");
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+
+  // Fetch borrowed history for a specific book
+  const fetchBookHistory = async (bookId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('borrow_records')
+        .select(`
+          id,
+          user_id,
+          book_id,
+          borrow_date,
+          return_date,
+          due_date,
+          fine,
+          users!inner(id, name, email)
+        `)
+        .eq('book_id', bookId)
+        .order('borrow_date', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transform the data to match our interface
+      const transformedData = data?.map(record => ({
+        ...record,
+        user: Array.isArray(record.users) ? record.users[0] : record.users
+      })) || [];
+      
+      setBorrowedHistory(transformedData);
+    } catch (error) {
+      console.error('Error fetching book history:', error);
+    }
+  };
+
+  // Handle showing book history
+  const handleShowHistory = async (book: any) => {
+    setSelectedBookHistory(book);
+    await fetchBookHistory(book.id);
+    setShowHistoryDialog(true);
+  };
+
+  // Handle adding a new book
+  const handleAddBook = async () => {
+    if (!newBook.title || !newBook.author) return;
+    
+    setIsAddingBook(true);
+    try {
+      // Auto-assign a placeholder image based on book title
+      const coverImageUrl = getPlaceholderImage('book-cover', newBook.title);
+      
+      const result = await addBook({
+        ...newBook,
+        available_copies: newBook.total_copies,
+        cover_image_url: coverImageUrl
+      });
+      
+      if (!result.error) {
+        setNewBook({
+          title: "",
+          author: "",
+          isbn: "",
+          published_year: new Date().getFullYear(),
+          total_copies: 1,
+          category_id: ""
+        });
+        
+        // Show success toast
+        toast({
+          title: "Book Added Successfully",
+          description: `"${newBook.title}" has been added to the library catalog.`,
+        });
+      } else {
+        // Show error toast
+        toast({
+          title: "Error Adding Book",
+          description: result.error || "Failed to add the book. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsAddingBook(false);
+    }
+  };
+
+  // Handle editing a book
+  const handleEditBook = async () => {
+    if (!editingBook) return;
+    
+    try {
+      await updateBook(editingBook.id, {
+        title: editingBook.title,
+        author: editingBook.author,
+        isbn: editingBook.isbn,
+        published_year: editingBook.published_year,
+        total_copies: editingBook.total_copies,
+        category_id: editingBook.category_id
+      });
+      
+      setIsEditDialogOpen(false);
+      setEditingBook(null);
+    } catch (error) {
+      console.error('Error updating book:', error);
+    }
+  };
+
+  // Handle deleting a book
+  const handleDeleteBook = async () => {
+    if (!bookToDelete) return;
+    
+    try {
+      await deleteBook(bookToDelete.id);
+      setIsDeleteDialogOpen(false);
+      setBookToDelete(null);
+    } catch (error) {
+      console.error('Error deleting book:', error);
+    }
+  };
+
+  // Handle adding/editing categories
+  const handleSaveCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, newCategoryName);
+      } else {
+        await addCategory(newCategoryName);
+      }
+      
+      setNewCategoryName("");
+      setEditingCategory(null);
+      setIsCategoryDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving category:', error);
+    }
+  };
+
+  // Load users for admin
+  const loadUsers = async () => {
+    if (role !== 'admin') return;
+    
+    setLoadingUsers(true);
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error) {
+        setUsers(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Generate reports data
+  const generateReportsData = () => {
+    const totalBooks = books.length;
+    const totalBorrows = records.length;
+    const activeBorrows = records.filter(r => r.status === 'borrowed').length;
+    const overdueBorrows = records.filter(r => 
+      r.status === 'borrowed' && new Date(r.due_date) < new Date()
+    ).length;
+    
+    const popularBooks = books
+      .map(book => ({
+        ...book,
+        borrowCount: records.filter(r => r.book_id === book.id).length
+      }))
+      .sort((a, b) => b.borrowCount - a.borrowCount)
+      .slice(0, 10);
+
+    return {
+      totalBooks,
+      totalBorrows,
+      activeBorrows,
+      overdueBorrows,
+      popularBooks
+    };
+  };
+
+  const reportsData = generateReportsData();
+
+  if (role !== 'admin') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <UserRound className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
+            <p className="text-muted-foreground">You need admin privileges to access this page.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-fade-in">
       <PageHeader 
         title="Admin Tools" 
-        description="Manage books, users, and library operations" 
+        description="Comprehensive library management and administration" 
       />
       
-      <Tabs defaultValue="add-book" className="space-y-6">
-        <div className="flex justify-between items-center">
-          <TabsList className="grid grid-cols-4 w-full md:w-[600px]">
-            <TabsTrigger value="add-book">Add Book</TabsTrigger>
-            <TabsTrigger value="manage-users">Manage Users</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
-        </div>
+      <Tabs defaultValue="books" className="space-y-6">
+        <TabsList className="grid grid-cols-4 w-full md:w-[600px]">
+          <TabsTrigger value="books">Books</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
+        </TabsList>
         
-        <TabsContent value="add-book" className="space-y-6">
+        {/* Books Management */}
+        <TabsContent value="books" className="space-y-6">
+          {/* Add Book Form */}
           <Card>
             <CardHeader>
               <CardTitle>Add New Book</CardTitle>
               <CardDescription>
-                Enter the details of the book you want to add to the library
+                Add a new book to the library catalog
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input id="title" placeholder="Enter book title" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="author">Author</Label>
-                    <Input id="author" placeholder="Enter author name" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="isbn">ISBN</Label>
-                    <Input id="isbn" placeholder="Enter ISBN" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="publisher">Publisher</Label>
-                    <Input id="publisher" placeholder="Enter publisher" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="genre">Genre</Label>
-                    <Select>
-                      <SelectTrigger id="genre">
-                        <SelectValue placeholder="Select genre" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="fiction">Fiction</SelectItem>
-                        <SelectItem value="non-fiction">Non-Fiction</SelectItem>
-                        <SelectItem value="science">Science</SelectItem>
-                        <SelectItem value="history">History</SelectItem>
-                        <SelectItem value="biography">Biography</SelectItem>
-                        <SelectItem value="fantasy">Fantasy</SelectItem>
-                        <SelectItem value="mystery">Mystery</SelectItem>
-                        <SelectItem value="romance">Romance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="publication-date">Publication Date</Label>
-                    <Input id="publication-date" type="date" />
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea 
-                    id="description" 
-                    placeholder="Enter book description" 
-                    rows={4}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cover">Book Cover</Label>
-                  <div className="flex items-center gap-4">
-                    <div className="w-32 h-40 border-2 border-dashed rounded-md flex items-center justify-center">
-                      <div className="text-center">
-                        <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Upload Cover</span>
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Drag and drop or click to upload a cover image.
-                      <br />
-                      Recommended size: 400x600px. Max file size: 2MB.
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-4">
-                  <Button className="bg-lms-green hover:bg-lms-green-dark">
-                    Add Book
-                  </Button>
-                  <Button variant="outline">Cancel</Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-primary/10 pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpenText className="h-5 w-5" />
-                  <span>Book Management</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    View All Books
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Edit Existing Books
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Manage Categories
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Import Books (CSV)
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-primary/10 pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpenText className="h-5 w-5" />
-                  <span>Borrowing Management</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    Check Out Books
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Return Books
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    View Borrowed Books
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Manage Due Dates
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-primary/10 pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpenText className="h-5 w-5" />
-                  <span>Quick Actions</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    Generate Barcode
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Print Book Labels
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Check Book Status
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Book Maintenance
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="manage-users" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Manage Library Members</CardTitle>
-              <CardDescription>
-                View and manage user accounts, memberships, and permissions
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4 mb-6">
-                <div className="flex-1 relative">
+                  <Label htmlFor="title">Title *</Label>
                   <Input 
-                    placeholder="Search users by name or email..." 
-                    className="pl-8"
+                    id="title" 
+                    value={newBook.title}
+                    onChange={(e) => setNewBook({ ...newBook, title: e.target.value })}
+                    placeholder="Enter book title" 
                   />
                 </div>
-                
-                <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
-                  <Select defaultValue="all">
-                    <SelectTrigger className="w-full sm:w-40">
-                      <SelectValue placeholder="Status" />
+                <div className="space-y-2">
+                  <Label htmlFor="author">Author *</Label>
+                  <Input 
+                    id="author" 
+                    value={newBook.author}
+                    onChange={(e) => setNewBook({ ...newBook, author: e.target.value })}
+                    placeholder="Enter author name" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="isbn">ISBN</Label>
+                  <Input 
+                    id="isbn" 
+                    value={newBook.isbn}
+                    onChange={(e) => setNewBook({ ...newBook, isbn: e.target.value })}
+                    placeholder="Enter ISBN" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="year">Published Year</Label>
+                  <Input 
+                    id="year" 
+                    type="number"
+                    value={newBook.published_year}
+                    onChange={(e) => setNewBook({ ...newBook, published_year: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="copies">Total Copies</Label>
+                  <Input 
+                    id="copies" 
+                    type="number"
+                    min="1"
+                    value={newBook.total_copies}
+                    onChange={(e) => setNewBook({ ...newBook, total_copies: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select onValueChange={(value) => setNewBook({ ...newBook, category_id: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="overdue">Overdue</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
-                  
-                  <Button className="bg-lms-green hover:bg-lms-green-dark">
-                    <UserRound className="mr-2 h-4 w-4" />
-                    Add New Member
-                  </Button>
                 </div>
               </div>
               
-              <div className="rounded-md border">
-                <div className="grid grid-cols-5 p-4 bg-muted/50 font-medium">
-                  <div>Name</div>
-                  <div>Email</div>
-                  <div>Status</div>
-                  <div>Books</div>
-                  <div>Actions</div>
-                </div>
-                <div className="divide-y">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="grid grid-cols-5 p-4">
-                      <div className="font-medium">John Doe {i}</div>
-                      <div className="text-muted-foreground">user{i}@example.com</div>
-                      <div>
-                        <div className={`px-2 py-1 rounded-full text-xs inline-flex ${
-                          i % 3 === 0 
-                            ? "bg-yellow-100 text-yellow-800"
-                            : i % 2 === 0
-                            ? "bg-red-100 text-red-800"
-                            : "bg-green-100 text-green-800"
-                        }`}>
-                          {i % 3 === 0 ? "Overdue" : i % 2 === 0 ? "Inactive" : "Active"}
-                        </div>
-                      </div>
-                      <div>{i % 3} borrowed</div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Edit</Button>
-                        <Button variant="outline" size="sm">View</Button>
-                      </div>
-                    </div>
-                  ))}
+              <div className="mt-6">
+                <div className="p-4 border rounded-lg bg-blue-50 border-blue-200">
+                  <p className="text-sm text-blue-700">
+                    📚 A unique book cover will be automatically assigned based on the book title.
+                  </p>
                 </div>
               </div>
               
-              <div className="flex justify-between items-center mt-6">
-                <div className="text-sm text-muted-foreground">
-                  Showing 5 of 120 members
-                </div>
-                <div className="flex gap-1">
-                  <Button variant="outline" size="sm" disabled>Previous</Button>
-                  <Button variant="outline" size="sm" className="bg-primary text-white">1</Button>
-                  <Button variant="outline" size="sm">2</Button>
-                  <Button variant="outline" size="sm">3</Button>
-                  <Button variant="outline" size="sm">Next</Button>
-                </div>
+              <div className="mt-6">
+                <Button 
+                  onClick={handleAddBook}
+                  disabled={isAddingBook || !newBook.title || !newBook.author}
+                  className="bg-lms-blue hover:bg-lms-blue-dark"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isAddingBook ? "Adding..." : "Add Book"}
+                </Button>
               </div>
             </CardContent>
           </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-primary/10 pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  <span>Member Management</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    View All Members
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Add New Member
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Edit Member
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Member Activity Logs
-                  </Button>
+
+          {/* Books List */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Manage Books</CardTitle>
+              <CardDescription>
+                Edit or remove books from the catalog
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Author</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Copies</TableHead>
+                      <TableHead>Available</TableHead>
+                      <TableHead>History</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {books.slice(0, 10).map((book) => (
+                      <TableRow key={book.id}>
+                        <TableCell className="font-medium">{book.title}</TableCell>
+                        <TableCell>{book.author}</TableCell>
+                        <TableCell>
+                          {book.categories ? (
+                            <Badge variant="secondary">{book.categories.name}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">No category</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{book.total_copies}</TableCell>
+                        <TableCell>{book.available_copies}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleShowHistory(book)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setEditingBook(book);
+                                setIsEditDialogOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setBookToDelete(book);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Categories Management */}
+        <TabsContent value="categories" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>Manage Categories</CardTitle>
+                  <CardDescription>
+                    Add, edit, or remove book categories
+                  </CardDescription>
                 </div>
+                <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      onClick={() => {
+                        setEditingCategory(null);
+                        setNewCategoryName("");
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Category
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingCategory ? "Edit Category" : "Add Category"}
+                      </DialogTitle>
+                      <DialogDescription>
+                        {editingCategory ? "Modify the category name." : "Create a new book category."}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="categoryName">Category Name</Label>
+                        <Input
+                          id="categoryName"
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          placeholder="Enter category name"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleSaveCategory} disabled={!newCategoryName.trim()}>
+                        {editingCategory ? "Update" : "Add"} Category
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categories.map((category) => (
+                  <Card key={category.id}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{category.name}</span>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingCategory(category);
+                              setNewCategoryName(category.name);
+                              setIsCategoryDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => deleteCategory(category.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Users Management */}
+        <TabsContent value="users" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>
+                    View and manage registered users
+                  </CardDescription>
+                </div>
+                <Button onClick={loadUsers} disabled={loadingUsers}>
+                  {loadingUsers ? "Loading..." : "Refresh Users"}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {users.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                              {user.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">Active</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Click "Refresh Users" to load user data</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Reports */}
+        <TabsContent value="reports" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-6 text-center">
+                <BookOpen className="h-8 w-8 mx-auto mb-2 text-blue-600" />
+                <div className="text-2xl font-bold">{reportsData.totalBooks}</div>
+                <p className="text-sm text-muted-foreground">Total Books</p>
               </CardContent>
             </Card>
             
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-primary/10 pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  <span>Membership</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    Membership Plans
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Renew Membership
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Membership Cards
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Membership Reports
-                  </Button>
-                </div>
+            <Card>
+              <CardContent className="p-6 text-center">
+                <FileSpreadsheet className="h-8 w-8 mx-auto mb-2 text-green-600" />
+                <div className="text-2xl font-bold">{reportsData.totalBorrows}</div>
+                <p className="text-sm text-muted-foreground">Total Borrows</p>
               </CardContent>
             </Card>
             
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-primary/10 pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  <span>Quick Actions</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    Send Mass Email
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Import Members (CSV)
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Export Member List
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    Member Feedback
-                  </Button>
-                </div>
+            <Card>
+              <CardContent className="p-6 text-center">
+                <UserRound className="h-8 w-8 mx-auto mb-2 text-orange-600" />
+                <div className="text-2xl font-bold">{reportsData.activeBorrows}</div>
+                <p className="text-sm text-muted-foreground">Active Borrows</p>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-6 text-center">
+                <Users className="h-8 w-8 mx-auto mb-2 text-red-600" />
+                <div className="text-2xl font-bold">{reportsData.overdueBorrows}</div>
+                <p className="text-sm text-muted-foreground">Overdue Books</p>
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-        
-        <TabsContent value="reports" className="space-y-6">
+
           <Card>
             <CardHeader>
-              <CardTitle>Library Reports</CardTitle>
+              <CardTitle>Most Popular Books</CardTitle>
               <CardDescription>
-                Generate and view reports on library operations
+                Books with the highest borrowing frequency
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <Card>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <FileSpreadsheet className="h-5 w-5 text-lms-green" />
-                      Borrowing Report
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      View details about borrowed books, due dates, and overdue items.
-                    </p>
-                    <Button className="w-full bg-lms-green hover:bg-lms-green-dark">Generate</Button>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <FileSpreadsheet className="h-5 w-5 text-lms-blue" />
-                      Book Inventory
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Complete inventory of all books, including availability status.
-                    </p>
-                    <Button className="w-full bg-lms-blue hover:bg-lms-blue-dark">Generate</Button>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="p-4">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <FileSpreadsheet className="h-5 w-5 text-lms-green" />
-                      Member Activity
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4 pt-0">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Track member activity, including borrowing history and engagement.
-                    </p>
-                    <Button className="w-full bg-lms-green hover:bg-lms-green-dark">Generate</Button>
-                  </CardContent>
-                </Card>
-              </div>
-              
               <div className="space-y-4">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Custom Report</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Generate a custom report by selecting parameters below
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="report-type">Report Type</Label>
-                      <Select defaultValue="borrowing">
-                        <SelectTrigger id="report-type">
-                          <SelectValue placeholder="Select Report Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="borrowing">Borrowing Report</SelectItem>
-                          <SelectItem value="inventory">Inventory Report</SelectItem>
-                          <SelectItem value="member">Member Report</SelectItem>
-                          <SelectItem value="overdue">Overdue Report</SelectItem>
-                          <SelectItem value="financial">Financial Report</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="date-range">Date Range</Label>
-                      <Select defaultValue="month">
-                        <SelectTrigger id="date-range">
-                          <SelectValue placeholder="Select Date Range" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="today">Today</SelectItem>
-                          <SelectItem value="week">This Week</SelectItem>
-                          <SelectItem value="month">This Month</SelectItem>
-                          <SelectItem value="quarter">This Quarter</SelectItem>
-                          <SelectItem value="year">This Year</SelectItem>
-                          <SelectItem value="custom">Custom Range</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="format">Output Format</Label>
-                      <Select defaultValue="pdf">
-                        <SelectTrigger id="format">
-                          <SelectValue placeholder="Select Format" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pdf">PDF</SelectItem>
-                          <SelectItem value="excel">Excel</SelectItem>
-                          <SelectItem value="csv">CSV</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="detail-level">Detail Level</Label>
-                      <Select defaultValue="standard">
-                        <SelectTrigger id="detail-level">
-                          <SelectValue placeholder="Select Detail Level" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="summary">Summary</SelectItem>
-                          <SelectItem value="standard">Standard</SelectItem>
-                          <SelectItem value="detailed">Detailed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  <Button className="bg-lms-blue hover:bg-lms-blue-dark">
-                    Generate Custom Report
-                  </Button>
-                </div>
-                
-                <div className="pt-4">
-                  <h3 className="text-lg font-medium mb-2">Scheduled Reports</h3>
-                  <div className="rounded-md border">
-                    <div className="grid grid-cols-4 p-4 bg-muted/50 font-medium">
-                      <div>Report Name</div>
-                      <div>Frequency</div>
-                      <div>Last Generated</div>
-                      <div>Actions</div>
-                    </div>
-                    <div className="divide-y">
-                      <div className="grid grid-cols-4 p-4">
-                        <div className="font-medium">Monthly Borrowing Summary</div>
-                        <div>Monthly</div>
-                        <div>May 1, 2025</div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                          <Button variant="outline" size="sm">Generate Now</Button>
-                        </div>
+                {reportsData.popularBooks.slice(0, 5).map((book, index) => (
+                  <div key={book.id} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-sm font-medium">
+                        {index + 1}
                       </div>
-                      <div className="grid grid-cols-4 p-4">
-                        <div className="font-medium">Weekly Overdue Report</div>
-                        <div>Weekly</div>
-                        <div>May 7, 2025</div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                          <Button variant="outline" size="sm">Generate Now</Button>
-                        </div>
+                      <div>
+                        <p className="font-medium">{book.title}</p>
+                        <p className="text-sm text-muted-foreground">by {book.author}</p>
                       </div>
                     </div>
+                    <Badge variant="secondary">{book.borrowCount} borrows</Badge>
                   </div>
-                </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="settings" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Library Settings</CardTitle>
-              <CardDescription>
-                Configure library policies, system settings, and application preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="general" className="space-y-4">
-                <TabsList className="grid grid-cols-4 w-full">
-                  <TabsTrigger value="general">General</TabsTrigger>
-                  <TabsTrigger value="borrowing">Borrowing</TabsTrigger>
-                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
-                  <TabsTrigger value="system">System</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="general" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="library-name">Library Name</Label>
-                    <Input id="library-name" defaultValue="Public Library" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="library-contact">Contact Email</Label>
-                    <Input id="library-contact" defaultValue="contact@library.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="library-address">Library Address</Label>
-                    <Textarea id="library-address" defaultValue="123 Library Street, Booktown, BK 12345" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="library-hours">Operating Hours</Label>
-                    <Textarea 
-                      id="library-hours" 
-                      defaultValue={
-                        "Monday - Friday: 9:00 AM - 8:00 PM\n" +
-                        "Saturday: 10:00 AM - 6:00 PM\n" +
-                        "Sunday: 12:00 PM - 5:00 PM"
-                      }
-                    />
-                  </div>
-                  <Button className="bg-lms-green hover:bg-lms-green-dark">
-                    Save Changes
-                  </Button>
-                </TabsContent>
-                
-                <TabsContent value="borrowing" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="max-books">Maximum Books Per User</Label>
-                    <Input id="max-books" type="number" defaultValue="5" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="loan-period">Loan Period (Days)</Label>
-                    <Input id="loan-period" type="number" defaultValue="14" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="grace-period">Grace Period (Days)</Label>
-                    <Input id="grace-period" type="number" defaultValue="3" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fine-rate">Fine Rate ($ per day)</Label>
-                    <Input id="fine-rate" type="number" step="0.01" defaultValue="0.50" />
-                  </div>
-                  <Button className="bg-lms-green hover:bg-lms-green-dark">
-                    Save Changes
-                  </Button>
-                </TabsContent>
-                
-                <TabsContent value="notifications" className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Due Date Reminders</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Send email reminders before books are due
-                        </p>
-                      </div>
-                      <div className="ml-4">
-                        <div className="w-10 h-5 bg-lms-green rounded-full relative">
-                          <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Overdue Notifications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Send notifications for overdue books
-                        </p>
-                      </div>
-                      <div className="ml-4">
-                        <div className="w-10 h-5 bg-lms-green rounded-full relative">
-                          <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Book Recommendations</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Send book recommendations based on user history
-                        </p>
-                      </div>
-                      <div className="ml-4">
-                        <div className="w-10 h-5 bg-muted rounded-full relative">
-                          <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>New Book Arrivals</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Notify users about new books added to the library
-                        </p>
-                      </div>
-                      <div className="ml-4">
-                        <div className="w-10 h-5 bg-muted rounded-full relative">
-                          <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <Button className="bg-lms-green hover:bg-lms-green-dark">
-                    Save Changes
-                  </Button>
-                </TabsContent>
-                
-                <TabsContent value="system" className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="backup-frequency">Database Backup Frequency</Label>
-                    <Select defaultValue="daily">
-                      <SelectTrigger id="backup-frequency">
-                        <SelectValue placeholder="Select Frequency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="hourly">Hourly</SelectItem>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="log-retention">Log Retention (Days)</Label>
-                    <Input id="log-retention" type="number" defaultValue="30" />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label>Maintenance Mode</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Take the system offline for maintenance
-                        </p>
-                      </div>
-                      <div className="ml-4">
-                        <div className="w-10 h-5 bg-muted rounded-full relative">
-                          <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-2">
-                    <Button className="bg-red-500 hover:bg-red-700 mr-2">
-                      Reset Database
-                    </Button>
-                    <Button variant="outline">
-                      Download Backup
-                    </Button>
-                  </div>
-                  <Button className="bg-lms-green hover:bg-lms-green-dark mt-4">
-                    Save Changes
-                  </Button>
-                </TabsContent>
-              </Tabs>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Book Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Book</DialogTitle>
+            <DialogDescription>
+              Modify book details below.
+            </DialogDescription>
+          </DialogHeader>
+          {editingBook && (
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="editTitle">Title</Label>
+                <Input
+                  id="editTitle"
+                  value={editingBook.title}
+                  onChange={(e) => setEditingBook({ ...editingBook, title: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editAuthor">Author</Label>
+                <Input
+                  id="editAuthor"
+                  value={editingBook.author}
+                  onChange={(e) => setEditingBook({ ...editingBook, author: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editCopies">Total Copies</Label>
+                <Input
+                  id="editCopies"
+                  type="number"
+                  value={editingBook.total_copies}
+                  onChange={(e) => setEditingBook({ ...editingBook, total_copies: parseInt(e.target.value) })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditBook}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Book Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Book</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this book? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {bookToDelete && (
+            <div className="p-4 rounded-lg border">
+              <p className="font-medium">{bookToDelete.title}</p>
+              <p className="text-sm text-muted-foreground">by {bookToDelete.author}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteBook}>
+              Delete Book
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Borrowed History Dialog */}
+      <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Borrowed History - {selectedBookHistory?.title}</DialogTitle>
+            <DialogDescription>
+              View the complete borrowing history for this book
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Search for history */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by user name or email..."
+                value={historySearchTerm}
+                onChange={(e) => setHistorySearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+
+          {borrowedHistory.length > 0 ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Borrowed Date</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Returned Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Fine</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {borrowedHistory
+                    .filter(record => 
+                      !historySearchTerm || 
+                      record.user?.name?.toLowerCase().includes(historySearchTerm.toLowerCase()) ||
+                      record.user?.email?.toLowerCase().includes(historySearchTerm.toLowerCase())
+                    )
+                    .map((record) => (
+                    <TableRow key={record.id}>
+                      <TableCell className="font-medium">
+                        {record.user?.name || 'Unknown User'}
+                      </TableCell>
+                      <TableCell>{record.user?.email || 'N/A'}</TableCell>
+                      <TableCell>
+                        {new Date(record.borrow_date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {record.due_date ? new Date(record.due_date).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        {record.return_date ? new Date(record.return_date).toLocaleDateString() : 'Not Returned'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={record.return_date ? "default" : "destructive"}>
+                          {record.return_date ? "Returned" : "Borrowed"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {record.fine ? `$${record.fine}` : '$0.00'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              No borrowing history found for this book.
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistoryDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
