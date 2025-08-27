@@ -1,16 +1,54 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { BookCard } from "@/components/BookCard";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useBooks } from "@/hooks/useLibraryData";
+import { useBooks, useBorrowRecords } from "@/hooks/useLibraryData";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, User } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
   const { books, loading } = useBooks();
+  const { borrowBook, refetch: refetchRecords } = useBorrowRecords();
   const featuredBooks = books.slice(0, 6);
+
+  // Request dialog state
+  const [selectedBook, setSelectedBook] = useState<any>(null);
+  const [isBorrowDialogOpen, setIsBorrowDialogOpen] = useState(false);
+  const [isBorrowing, setIsBorrowing] = useState(false);
+
+  // Handle requesting a book
+  const handleBorrowBook = async () => {
+    if (!selectedBook || !profile?.id) return;
+    
+    setIsBorrowing(true);
+    try {
+      // Set due date to 14 days from now
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14);
+      
+      const result = await borrowBook(selectedBook.id, dueDate.toISOString());
+      
+      if (!result.error) {
+        setIsBorrowDialogOpen(false);
+        setSelectedBook(null);
+        // Refresh borrow records to update UI
+        await refetchRecords();
+      }
+    } finally {
+      setIsBorrowing(false);
+    }
+  };
+
+  const openBorrowDialog = (book: any) => {
+    setSelectedBook(book);
+    setIsBorrowDialogOpen(true);
+  };
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -55,7 +93,7 @@ export default function Home() {
             ))
           ) : (
             featuredBooks.map((book) => (
-              <BookCard key={book.id} book={book} />
+              <BookCard key={book.id} book={book} onBorrow={openBorrowDialog} />
             ))
           )}
         </div>
@@ -112,6 +150,49 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Request Book Dialog */}
+      <Dialog open={isBorrowDialogOpen} onOpenChange={setIsBorrowDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Request Book for Borrowing</DialogTitle>
+            <DialogDescription>
+              This will submit a request to borrow this book. You'll be notified when it's ready for pickup.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedBook && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg border space-y-2">
+                <h3 className="font-semibold text-lg">{selectedBook.title}</h3>
+                <p className="text-muted-foreground">by {selectedBook.author}</p>
+                {selectedBook.categories && (
+                  <Badge variant="secondary">{selectedBook.categories.name}</Badge>
+                )}
+              </div>
+              
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded">
+                <h4 className="font-medium text-amber-800 mb-2">📚 How it works:</h4>
+                <ul className="text-sm text-amber-700 space-y-1">
+                  <li>• Your request will be reviewed by library staff</li>
+                  <li>• You'll be notified when the book is ready for pickup</li>
+                  <li>• Visit the library within 3 days of approval</li>
+                  <li>• Bring your library card and valid ID</li>
+                </ul>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBorrowDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleBorrowBook} disabled={isBorrowing}>
+              {isBorrowing ? "Submitting Request..." : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
