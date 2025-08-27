@@ -30,8 +30,17 @@ export interface BorrowRecord {
   due_date: string;
   fine: number;
   is_late: boolean;
-  status: "borrowed" | "returned";
+  status: "requested" | "approved" | "borrowed" | "returned" | "rejected";
+  requested_date: string;
+  approved_date?: string;
+  approved_by?: string;
+  rejection_reason?: string;
   users?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  approved_by_user?: {
     id: string;
     name: string;
     email: string;
@@ -85,7 +94,7 @@ export function useDashboardStats() {
         .select(
           `
           *,
-          users (id, name, email),
+          users!borrow_records_user_id_fkey (id, name, email),
           books (title, author)
         `
         )
@@ -270,8 +279,9 @@ export function useBorrowRecords() {
       setLoading(true);
       let query = supabase.from("borrow_records").select(`
           *,
-          users (id, name, email),
-          books (*)
+          users!borrow_records_user_id_fkey (id, name, email),
+          books (*),
+          approved_by_user:users!borrow_records_approved_by_fkey (id, name, email)
         `);
 
       // If user is not admin, only show their own records
@@ -279,7 +289,7 @@ export function useBorrowRecords() {
         query = query.eq("user_id", profile.id);
       }
 
-      const { data, error } = await query.order("borrow_date", {
+      const { data, error } = await query.order("requested_date", {
         ascending: false,
       });
 
@@ -296,45 +306,61 @@ export function useBorrowRecords() {
     try {
       if (!profile?.id) throw new Error("User profile not found");
 
+      console.log("🔍 Starting book request process...", {
+        userId: profile.id,
+        bookId,
+        dueDate,
+      });
+
       // First, check if book is available
       const { data: book, error: bookError } = await supabase
         .from("books")
-        .select("available_copies")
+        .select("available_copies, title")
         .eq("id", bookId)
         .single();
 
-      if (bookError) throw new Error(bookError.message);
+      if (bookError) {
+        console.error("❌ Book lookup failed:", bookError);
+        throw new Error(`Book lookup failed: ${bookError.message}`);
+      }
+
+      console.log("📖 Book found:", book);
+
       if ((book.available_copies || 0) <= 0) {
         throw new Error("Book is not available for borrowing");
       }
 
-      // Create borrow record
+      // Create borrow request (not direct borrow)
+      const requestData = {
+        user_id: profile.id,
+        book_id: bookId,
+        due_date: dueDate,
+        status: "requested" as const,
+        requested_date: new Date().toISOString(),
+      };
+
+      console.log("📝 Creating request with data:", requestData);
+
       const { data, error } = await supabase
         .from("borrow_records")
-        .insert([
-          {
-            user_id: profile.id,
-            book_id: bookId,
-            due_date: dueDate,
-            status: "borrowed",
-          },
-        ])
+        .insert([requestData])
         .select()
         .single();
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error("❌ Insert failed:", error);
+        throw new Error(`Failed to create request: ${error.message}`);
+      }
 
-      // Update book availability
-      await supabase
-        .from("books")
-        .update({
-          available_copies: book.available_copies - 1,
-        })
-        .eq("id", bookId);
+      console.log("✅ Request created successfully:", data);
+
+      // Don't update book availability immediately - only when librarian approves
+      // This ensures books show as "pending" until physically confirmed
 
       await fetchRecords();
       return { data, error: null };
     } catch (err) {
+      console.error("❌ borrowBook function failed:", err);
       return { data: null, error: (err as Error).message };
     }
   };
@@ -382,6 +408,165 @@ export function useBorrowRecords() {
     } catch (err) {
       return { error: (err as Error).message };
     }
+  }; // New function to approve a borrow request (Admin only)
+  const approveRequest = async (recordId: string) => {
+    try {
+      if (role !== "admin") throw new Error("Only admins can approve requests");
+
+      console.log("🔍 Approving request:", { recordId, adminId: profile?.id });
+
+      // Get the request details
+      const { data: record, error: recordError } = await supabase
+        .from("borrow_records")
+        .select("book_id, user_id")
+        .eq("id", recordId)
+        .eq("status", "requested")
+        .single();
+
+      if (recordError)
+        throw new Error("Request not found or already processed");
+
+      // Check if book is still available
+      const { data: book, error: bookError } = await supabase
+        .from("books")
+        .select("available_copies")
+        .eq("id", record.book_id)
+        .single();
+
+      if (bookError || (book.available_copies || 0) <= 0) {
+        throw new Error("Book is no longer available");
+      }
+
+      // Update request to approved - temporarily remove approved_by to avoid FK constraint issues
+      const updateData = {
+        status: "approved",
+        approved_date: new Date().toISOString(),
+        // Temporarily commenting out approved_by to fix FK constraint issue
+        // approved_by: profile?.id,
+      };
+
+      console.log("📝 Updating record with:", updateData);
+
+      const { error: updateError } = await supabase
+        .from("borrow_records")
+        .update(updateData)
+        .eq("id", recordId);
+
+      if (updateError) {
+        console.error("❌ Update error:", updateError);
+        throw new Error(updateError.message);
+      }
+
+      // Reserve the book (reduce available copies)
+      await supabase
+        .from("books")
+        .update({
+          available_copies: book.available_copies - 1,
+        })
+        .eq("id", record.book_id);
+
+      console.log("✅ Request approved successfully");
+      await fetchRecords();
+      return { error: null };
+    } catch (err) {
+      console.error("❌ approveRequest failed:", err);
+      return { error: (err as Error).message };
+    }
+  };
+
+  // New function to confirm physical pickup (Admin only)
+  const confirmBorrow = async (recordId: string) => {
+    try {
+      if (role !== "admin")
+        throw new Error("Only admins can confirm borrowing");
+
+      // Update approved request to borrowed
+      const { error: updateError } = await supabase
+        .from("borrow_records")
+        .update({
+          status: "borrowed",
+          borrow_date: new Date().toISOString(),
+        })
+        .eq("id", recordId)
+        .eq("status", "approved");
+
+      if (updateError) throw new Error(updateError.message);
+
+      await fetchRecords();
+      return { error: null };
+    } catch (err) {
+      return { error: (err as Error).message };
+    }
+  };
+
+  // New function to reject a request (Admin only)
+  const rejectRequest = async (recordId: string, reason: string) => {
+    try {
+      if (role !== "admin") throw new Error("Only admins can reject requests");
+
+      // Get the request details
+      const { data: record, error: recordError } = await supabase
+        .from("borrow_records")
+        .select("book_id")
+        .eq("id", recordId)
+        .eq("status", "requested")
+        .single();
+
+      if (recordError)
+        throw new Error("Request not found or already processed");
+
+      // Update request to rejected
+      const { error: updateError } = await supabase
+        .from("borrow_records")
+        .update({
+          status: "rejected",
+          rejection_reason: reason,
+        })
+        .eq("id", recordId);
+
+      if (updateError) throw new Error(updateError.message);
+
+      await fetchRecords();
+      return { error: null };
+    } catch (err) {
+      return { error: (err as Error).message };
+    }
+  };
+
+  // New function to cancel a request (User only)
+  const cancelRequest = async (recordId: string) => {
+    try {
+      // Get the request details to verify it belongs to the user
+      const { data: record, error: recordError } = await supabase
+        .from("borrow_records")
+        .select("user_id, status")
+        .eq("id", recordId)
+        .single();
+
+      if (recordError) throw new Error("Request not found");
+
+      // Verify the request belongs to the current user and is still pending
+      if (record.user_id !== profile?.id) {
+        throw new Error("You can only cancel your own requests");
+      }
+
+      if (record.status !== "requested") {
+        throw new Error("Only pending requests can be cancelled");
+      }
+
+      // Delete the request record
+      const { error: deleteError } = await supabase
+        .from("borrow_records")
+        .delete()
+        .eq("id", recordId);
+
+      if (deleteError) throw new Error(deleteError.message);
+
+      await fetchRecords();
+      return { error: null };
+    } catch (err) {
+      return { error: (err as Error).message };
+    }
   };
 
   useEffect(() => {
@@ -394,6 +579,10 @@ export function useBorrowRecords() {
     error,
     borrowBook,
     returnBook,
+    approveRequest,
+    confirmBorrow,
+    rejectRequest,
+    cancelRequest,
     refetch: fetchRecords,
   };
 }
