@@ -80,7 +80,7 @@ export default function AdminTools() {
         user: Array.isArray(record.users) ? record.users[0] : record.users
       })) || [];
       
-      setBorrowedHistory(transformedData);
+      setBorrowedHistory(transformedData as any);
     } catch (error) {
       console.error('Error fetching book history:', error);
     }
