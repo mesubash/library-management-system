@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { BookCard } from "@/components/BookCard";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useBooks, useBorrowRecords } from "@/hooks/useLibraryData";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ export default function Home() {
   const { books, loading } = useBooks();
   const { borrowBook, refetch: refetchRecords } = useBorrowRecords();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const featuredBooks = books.slice(0, 6);
   const isAdmin = role === "admin";
 
@@ -71,17 +72,17 @@ export default function Home() {
       title: "Edit Book",
       description: `Redirecting to edit ${book.title}...`,
     });
-    // TODO: Implement edit book functionality or redirect to admin tools
-    window.location.href = `/admin-tools?edit=${book.id}`;
+    // Navigate to admin tools with the book ID to edit
+    navigate(`/admin-tools?edit=${book.id}`);
   };
 
   const handleManageBook = (book: any) => {
     toast({
       title: "Manage Book",
-      description: `Managing ${book.title}...`,
+      description: `Opening management panel for ${book.title}...`,
     });
-    // TODO: Implement manage book functionality
-    window.location.href = `/admin-tools?manage=${book.id}`;
+    // Navigate to Books page which has the manage functionality
+    navigate(`/books?manage=${book.id}`);
   };
 
   return (

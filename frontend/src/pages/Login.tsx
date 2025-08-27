@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -110,14 +112,30 @@ export default function Login() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
             {success && (
               <div className="text-sm text-green-600 text-center">
@@ -135,26 +153,16 @@ export default function Login() {
               <div className="text-sm text-muted-foreground text-center mb-3">
                 Quick Test Access
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex justify-center">
                 <Button 
                   type="button"
                   variant="outline" 
                   size="sm"
-                  onClick={() => handleTestLogin("user@lms.com", "password123")}
+                  onClick={() => handleTestLogin("admin@lms.com", "password")}
                   disabled={isLoading}
                   className="text-xs"
                 >
-                  Test User
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleTestLogin("admin@lms.com", "admin123")}
-                  disabled={isLoading}
-                  className="text-xs"
-                >
-                  Test Admin
+                  Test Admin Login
                 </Button>
               </div>
             </div>

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useBooks, useBorrowRecords, useCategories } from "@/hooks/useLibraryData";
 import { supabase } from "@/lib/supabase";
 import { getPlaceholderImage } from "@/lib/imageUpload";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +23,7 @@ export default function Books() {
   const isAdmin = role === "admin";
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   const { books, loading } = useBooks();
   const { borrowBook, records, refetch: refetchRecords } = useBorrowRecords();
@@ -170,6 +171,19 @@ export default function Books() {
     if (!error && data) {
       setBookBorrowers(data);
     }
+  };
+
+  const handleEditBook = (book: any) => {
+    toast({
+      title: "Edit Book",
+      description: `Redirecting to edit ${book.title}...`,
+    });
+    // Navigate to admin tools with the book ID to edit
+    navigate(`/admin-tools?edit=${book.id}`);
+  };
+
+  const handleManageBook = (book: any) => {
+    openManageBookDialog(book);
   };
 
   const handleUpdateCopies = async () => {
@@ -382,7 +396,13 @@ export default function Books() {
               {filteredBooks.map((book) => (
                 viewMode === "grid" ? (
                   // Grid View - Use BookCard component
-                  <BookCard key={book.id} book={book} onBorrow={openBorrowDialog} />
+                  <BookCard 
+                    key={book.id} 
+                    book={book} 
+                    onBorrow={openBorrowDialog}
+                    onEdit={isAdmin ? handleEditBook : undefined}
+                    onManage={isAdmin ? handleManageBook : undefined}
+                  />
                 ) : (
                   // List View - Keep existing implementation
                   <Card key={book.id} className="hover:shadow-md transition-shadow flex">
