@@ -4,7 +4,7 @@ A comprehensive **Library Management System** built with React (Vite + TypeScrip
 
 ## 🚀 Live Demo
 
-The frontend is deployed and accessible at:
+The project is deployed and accessible at:
 
 [Library-Management-System](https://lms.subashsdhami.com.np/)
 
@@ -62,7 +62,7 @@ The frontend is deployed and accessible at:
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
+git clone git@github.com:mesubash/library-management-system.git
 cd library-management-system
 ```
 
@@ -148,12 +148,14 @@ This project is optimized for deployment on **Vercel**:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+
 ## 📞 Support
 
 For questions, issues, or suggestions:
 - Create an issue on GitHub
 - Contact the development team
 - Check the documentation
+Or mailto: `contact@subashsdhami.com.np`
 
 ## 📄 License
 
