@@ -1,50 +1,66 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
-import { UserRole } from "@/context/AuthContext";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("user");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, role, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check for success message from registration
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccess(location.state.message);
+      // Clear the state to prevent showing the message on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  // Handle navigation after authentication
+  useEffect(() => {
+    if (isAuthenticated && role) {
+      const from = location.state?.from?.pathname || (role === "admin" ? "/admin-dashboard" : "/dashboard");
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, role, navigate, location.state]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess(""); // Clear success message when attempting login
     
-    if (!username || !password) {
+    if (!email || !password) {
       setError("Please fill in all fields");
       return;
     }
     
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      // For demo purposes, any login is successful
-      login(role, username);
+    try {
+      const result = await login(email, password);
       
-      // Redirect based on role
-      if (role === "admin") {
-        navigate("/admin-dashboard");
+      if (result.error) {
+        setError(result.error);
       } else {
-        navigate("/dashboard");
+        // Login successful, navigation will be handled by useEffect
+        // Don't navigate here, let the useEffect handle it when role is available
       }
-      
+    } catch (error) {
+      setError("An unexpected error occurred");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
   
   return (
@@ -62,59 +78,52 @@ export default function Login() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select 
-                defaultValue="user"
-                onValueChange={(value) => setRole(value as UserRole)}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Select Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin (Librarian)</SelectItem>
-                  <SelectItem value="user">User (Member)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input 
-                id="username" 
-                placeholder="Enter your username" 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="Enter your password" 
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
               />
             </div>
-            {error && (
-              <div className="text-sm text-red-500 mt-2">{error}</div>
-            )}
-          </CardContent>
-          <CardFooter className="flex flex-col">
-            <Button 
-              type="submit" 
-              className="w-full bg-lms-green hover:bg-lms-green-dark"
-              disabled={isLoading}
-            >
-              {isLoading ? "Logging in..." : "Login"}
-            </Button>
-            {role === "user" && (
-              <div className="mt-4 text-center text-sm">
-                Don't have an account?{" "}
-                <Link to="/register" className="text-lms-blue hover:underline">
-                  Register
-                </Link>
+            {success && (
+              <div className="text-sm text-green-600 text-center">
+                {success}
               </div>
             )}
+            {error && (
+              <div className="text-sm text-red-600 text-center">
+                {error}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? "Signing in..." : "Sign In"}
+            </Button>
+            <div className="text-center text-sm">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-blue-600 hover:underline">
+                Register here
+              </Link>
+            </div>
           </CardFooter>
         </form>
       </Card>
