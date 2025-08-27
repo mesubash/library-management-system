@@ -3,7 +3,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } fro
 import { StatCard } from "@/components/StatCard";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Book, BookCopy, Clock, UserRound, Plus, Search } from "lucide-react";
+import { Book, BookCopy, Clock, UserRound, Plus, Search, ClipboardList } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,10 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 import { useDashboardStats, useBooks, useBorrowRecords, useCategories } from "@/hooks/useLibraryData";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { RequestManagement } from "@/components/RequestManagement";
 
 export default function AdminDashboard() {
   const { stats, loading: statsLoading } = useDashboardStats();
@@ -40,6 +42,7 @@ export default function AdminDashboard() {
   // Search and filter states
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("overview");
 
   const handleAddBook = async () => {
     setIsAddingBook(true);
@@ -242,8 +245,16 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* Charts and Analytics Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Main Content with Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="overview">Dashboard Overview</TabsTrigger>
+          <TabsTrigger value="requests">Request Management</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          {/* Charts and Analytics Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Popular Books Chart */}
         <Card>
           <CardHeader>
@@ -445,6 +456,12 @@ export default function AdminDashboard() {
           </Link>
         </Card>
       </div>
+        </TabsContent>
+
+        <TabsContent value="requests" className="space-y-6">
+          <RequestManagement />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
