@@ -20,6 +20,11 @@ export interface BorrowRecord {
   return_date?: string;
   due_date?: string;
   fine?: number;
+  status: "requested" | "approved" | "borrowed" | "returned" | "rejected";
+  requested_date: string;
+  approved_date?: string;
+  approved_by?: string;
+  rejection_reason?: string;
   // Relations
   book?: Book;
   user?: {

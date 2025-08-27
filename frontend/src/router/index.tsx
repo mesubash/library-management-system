@@ -63,8 +63,15 @@ export default function AppRouter() {
         } />
         
         <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <UserDashboard />
+          <ProtectedRoute requireAdmin={false}>
+            {role === "admin" ? <Navigate to="/admin-dashboard" replace /> : <UserDashboard />}
+          </ProtectedRoute>
+        } />
+        
+        {/* Catch any admin users trying to access regular dashboard */}
+        <Route path="/user-dashboard" element={
+          <ProtectedRoute requireAdmin={false}>
+            {role === "admin" ? <Navigate to="/admin-dashboard" replace /> : <UserDashboard />}
           </ProtectedRoute>
         } />
       </Route>

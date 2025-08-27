@@ -106,7 +106,16 @@ export type Database = {
           due_date: string | null;
           fine: number;
           is_late: boolean;
-          status: "borrowed" | "returned";
+          status:
+            | "requested"
+            | "approved"
+            | "borrowed"
+            | "returned"
+            | "rejected";
+          requested_date: string;
+          approved_date: string | null;
+          approved_by: string | null;
+          rejection_reason: string | null;
         };
         Insert: {
           id?: string;
@@ -117,7 +126,16 @@ export type Database = {
           due_date?: string | null;
           fine?: number;
           is_late?: boolean;
-          status?: "borrowed" | "returned";
+          status?:
+            | "requested"
+            | "approved"
+            | "borrowed"
+            | "returned"
+            | "rejected";
+          requested_date?: string;
+          approved_date?: string | null;
+          approved_by?: string | null;
+          rejection_reason?: string | null;
         };
         Update: {
           id?: string;
@@ -128,7 +146,16 @@ export type Database = {
           due_date?: string | null;
           fine?: number;
           is_late?: boolean;
-          status?: "borrowed" | "returned";
+          status?:
+            | "requested"
+            | "approved"
+            | "borrowed"
+            | "returned"
+            | "rejected";
+          requested_date?: string;
+          approved_date?: string | null;
+          approved_by?: string | null;
+          rejection_reason?: string | null;
         };
       };
       reviews: {
