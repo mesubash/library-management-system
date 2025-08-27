@@ -16,6 +16,7 @@ import { Link } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { BookCard } from "@/components/BookCard";
 
 export default function Books() {
   const { role, profile } = useAuth();
@@ -23,7 +24,7 @@ export default function Books() {
   const { toast } = useToast();
   
   const { books, loading } = useBooks();
-  const { borrowBook, records } = useBorrowRecords();
+  const { borrowBook, records, refetch: refetchRecords } = useBorrowRecords();
   const { categories } = useCategories();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,24 +45,21 @@ export default function Books() {
   const [isUpdatingCopies, setIsUpdatingCopies] = useState(false);
   const [bookBorrowers, setBookBorrowers] = useState<any[]>([]);
   
-  // Load current borrow count
+  // Load current borrow count (including pending requests) - reactive to records changes
   React.useEffect(() => {
-    const loadBorrowCount = async () => {
-      if (!profile?.id) return;
-      
-      const { data, error } = await supabase
-        .from('borrow_records')
-        .select('id')
-        .eq('user_id', profile.id)
-        .is('return_date', null);
-        
-      if (!error && data) {
-        setCurrentBorrowCount(data.length);
-      }
-    };
+    if (!profile?.id) {
+      setCurrentBorrowCount(0);
+      return;
+    }
     
-    loadBorrowCount();
-  }, [profile?.id, books]); // Re-run when books change (after borrowing)
+    // Count user's active requests/borrows from the records
+    const userActiveCount = records.filter(record => 
+      record.user_id === profile.id && 
+      ['requested', 'approved', 'borrowed'].includes(record.status)
+    ).length;
+    
+    setCurrentBorrowCount(userActiveCount);
+  }, [profile?.id, records]); // React to changes in records
   
   // Filter books based on search term, category and availability
   const filteredBooks = books.filter(book => {
@@ -77,48 +75,64 @@ export default function Books() {
       (availabilityFilter === "unavailable" && book.available_copies === 0);
     
     return matchesSearch && matchesCategory && matchesAvailability;
-  });
-
-  const handleBorrowBook = async () => {
+  });  const handleBorrowBook = async () => {
     if (!selectedBook || !profile?.id) return;
     
     setIsBorrowing(true);
     try {
-      // Check borrowing restrictions
-      const { data: currentBorrows, error: borrowError } = await supabase
-        .from('borrow_records')
-        .select('book_id')
-        .eq('user_id', profile.id)
-        .is('return_date', null); // Only active borrows
-
-      if (borrowError) {
-        console.error('Error checking current borrows:', borrowError);
+      // Check if user has already requested this specific book using current records
+      const hasRequestedThisBook = records.some(record => 
+        record.user_id === profile.id &&
+        record.book_id === selectedBook.id && 
+        ['requested', 'approved', 'borrowed'].includes(record.status)
+      );
+      
+      if (hasRequestedThisBook) {
+        toast({
+          title: "Already Requested",
+          description: "You have already requested this book or currently have it borrowed.",
+          variant: "destructive",
+        });
         return;
       }
 
-      // Check if user has already borrowed this specific book
-      const hasBorrowedThisBook = currentBorrows?.some(record => record.book_id === selectedBook.id);
-      if (hasBorrowedThisBook) {
-        alert('You have already borrowed this book. Please return it before borrowing again.');
-        return;
-      }
-
-      // Check if user has reached the 5-book limit
-      if (currentBorrows && currentBorrows.length >= 5) {
-        alert('You have reached the maximum limit of 5 borrowed books. Please return some books before borrowing new ones.');
+      // Check if user has reached the 5-book limit using current records  
+      const userActiveCount = records.filter(record => 
+        record.user_id === profile.id && 
+        ['requested', 'approved', 'borrowed'].includes(record.status)
+      ).length;
+      
+      if (userActiveCount >= 5) {
+        toast({
+          title: "Request Limit Reached",
+          description: "You have reached the maximum limit of 5 books (including pending requests). Please wait for approvals or return books.",
+          variant: "destructive",
+        });
         return;
       }
 
       // Set due date to 14 days from now
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 14);
-      
+
+      // Use the borrowBook function which now creates requests
       const result = await borrowBook(selectedBook.id, dueDate.toISOString());
       
       if (!result.error) {
-        setCurrentBorrowCount(prev => prev + 1); // Update the count
         setIsBorrowDialogOpen(false);
         setSelectedBook(null);
+        toast({
+          title: "Request Submitted",
+          description: "Your book request has been submitted successfully. You'll be notified when it's ready for pickup.",
+        });
+        // Refresh borrow records to update UI immediately
+        await refetchRecords();
+      } else {
+        toast({
+          title: "Request Failed",
+          description: result.error,
+          variant: "destructive",
+        });
       }
     } finally {
       setIsBorrowing(false);
@@ -217,22 +231,22 @@ export default function Books() {
 
       {/* User Borrow Status (for non-admin users) */}
       {!isAdmin && profile && (
-        <Card className="bg-blue-50 border-blue-200">
+        <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-                <span className="font-medium">Currently Borrowed: {currentBorrowCount}/5 books</span>
+                <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <span className="font-medium text-blue-800 dark:text-blue-200">Active Requests/Books: {currentBorrowCount}/5</span>
               </div>
               {currentBorrowCount >= 5 && (
                 <Badge variant="destructive">Limit Reached</Badge>
               )}
             </div>
             {currentBorrowCount >= 4 && (
-              <p className="text-sm text-blue-600 mt-2">
+              <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
                 {currentBorrowCount === 4 
-                  ? "You can borrow 1 more book." 
-                  : "You've reached the maximum limit. Return books to borrow more."}
+                  ? "You can request 1 more book." 
+                  : "You've reached the maximum limit. Wait for approvals or return books to request more."}
               </p>
             )}
           </CardContent>
@@ -359,72 +373,21 @@ export default function Books() {
                 : "space-y-4"
             }>
               {filteredBooks.map((book) => (
-                <Card key={book.id} className={`hover:shadow-md transition-shadow ${viewMode === "list" ? "flex" : ""}`}>
-                  <CardContent className={`p-6 ${viewMode === "list" ? "flex items-center gap-6 w-full" : ""}`}>
-                    {viewMode === "grid" ? (
-                      // Grid View
-                      <div className="space-y-4">
-                        <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
-                          <img 
-                            src={(book as any).cover_image_url || getPlaceholderImage('book-cover', book.title)}
-                            alt={`${book.title} cover`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <h3 className="font-semibold text-lg leading-tight">{book.title}</h3>
-                          <p className="text-sm text-muted-foreground">by {book.author}</p>
-                          
-                          {book.categories && (
-                            <Badge variant="secondary">{book.categories.name}</Badge>
-                          )}
-                          
-                          <div className="text-xs text-muted-foreground space-y-1">
-                            {book.isbn && <p>ISBN: {book.isbn}</p>}
-                            {book.published_year && <p>Published: {book.published_year}</p>}
-                            <p>
-                              {book.available_copies} of {book.total_copies} available
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="pt-2 space-y-2">
-                          {book.available_copies > 0 ? (
-                            <Button 
-                              className="w-full bg-lms-blue hover:bg-lms-blue-dark"
-                              onClick={() => openBorrowDialog(book)}
-                              disabled={!profile || currentBorrowCount >= 5}
-                            >
-                              {!profile ? "Login to Borrow" : currentBorrowCount >= 5 ? "Limit Reached" : "Borrow Book"}
-                            </Button>
-                          ) : (
-                            <Button variant="outline" className="w-full" disabled>
-                              Currently Unavailable
-                            </Button>
-                          )}
-                          
-                          {isAdmin && (
-                            <Button 
-                              variant="secondary" 
-                              className="w-full" 
-                              onClick={() => openManageBookDialog(book)}
-                            >
-                              Manage Book
-                            </Button>
-                          )}
-                        </div>
+                viewMode === "grid" ? (
+                  // Grid View - Use BookCard component
+                  <BookCard key={book.id} book={book} onBorrow={openBorrowDialog} />
+                ) : (
+                  // List View - Keep existing implementation
+                  <Card key={book.id} className="hover:shadow-md transition-shadow flex">
+                    <CardContent className="p-6 flex items-center gap-6 w-full">
+                      {/* List View */}
+                      <div className="w-24 h-32 bg-muted rounded-lg overflow-hidden shrink-0">
+                        <img 
+                          src={(book as any).cover_image_url || getPlaceholderImage('book-cover', book.title)}
+                          alt={`${book.title} cover`}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                    ) : (
-                      // List View
-                      <>
-                        <div className="w-24 h-32 bg-muted rounded-lg overflow-hidden shrink-0">
-                          <img 
-                            src={(book as any).cover_image_url || getPlaceholderImage('book-cover', book.title)}
-                            alt={`${book.title} cover`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
                         
                         <div className="flex-1 space-y-2">
                           <div>
@@ -455,7 +418,7 @@ export default function Books() {
                               onClick={() => openBorrowDialog(book)}
                               disabled={!profile || currentBorrowCount >= 5}
                             >
-                              {!profile ? "Login to Borrow" : currentBorrowCount >= 5 ? "Limit Reached" : "Borrow Book"}
+                              {!profile ? "Login to Request" : currentBorrowCount >= 5 ? "Limit Reached" : "Request Book"}
                             </Button>
                           ) : (
                             <Button variant="outline" disabled>
@@ -472,10 +435,9 @@ export default function Books() {
                             </Button>
                           )}
                         </div>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )
               ))}
             </div>
           )}
@@ -579,13 +541,13 @@ export default function Books() {
         </TabsContent>
       </Tabs>
 
-      {/* Borrow Book Dialog */}
+      {/* Request Book Dialog (Updated) */}
       <Dialog open={isBorrowDialogOpen} onOpenChange={setIsBorrowDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Borrow Book</DialogTitle>
+            <DialogTitle>Request Book for Borrowing</DialogTitle>
             <DialogDescription>
-              Confirm your book borrowing details below.
+              This will submit a request to borrow this book. You'll be notified when it's ready for pickup.
             </DialogDescription>
           </DialogHeader>
           
@@ -610,21 +572,19 @@ export default function Books() {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    Borrow Date: {new Date().toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    Due Date: {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                    Intended Due Date: {new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString()}
                   </span>
                 </div>
               </div>
               
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded">
-                <p className="text-sm text-blue-800">
-                  You can extend the borrowing period later if needed. Please return the book on or before the due date to avoid late fees.
-                </p>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded">
+                <h4 className="font-medium text-amber-800 mb-2">📚 How it works:</h4>
+                <ul className="text-sm text-amber-700 space-y-1">
+                  <li>• Your request will be reviewed by library staff</li>
+                  <li>• You'll be notified when the book is ready for pickup</li>
+                  <li>• Visit the library within 3 days of approval</li>
+                  <li>• Bring your library card and valid ID</li>
+                </ul>
               </div>
             </div>
           )}
@@ -634,7 +594,7 @@ export default function Books() {
               Cancel
             </Button>
             <Button onClick={handleBorrowBook} disabled={isBorrowing}>
-              {isBorrowing ? "Processing..." : "Confirm Borrow"}
+              {isBorrowing ? "Submitting Request..." : "Submit Request"}
             </Button>
           </DialogFooter>
         </DialogContent>
