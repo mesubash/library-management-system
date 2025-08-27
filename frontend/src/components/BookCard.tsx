@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,20 +5,33 @@ import { Button } from "@/components/ui/button";
 import { Book } from "@/types/book";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { useBorrowRecords } from "@/hooks/useLibraryData";
 import { getPlaceholderImage } from "@/lib/imageUpload";
 
 interface BookCardProps {
   book: Book;
   className?: string;
+  onBorrow?: (book: Book) => void;
 }
 
-export function BookCard({ book, className }: BookCardProps) {
-  const { role } = useAuth();
+export function BookCard({ book, className, onBorrow }: BookCardProps) {
+  const { role, profile } = useAuth();
+  const { records } = useBorrowRecords();
   const isAdmin = role === "admin";
   
   // Get consistent placeholder image for this book
   const coverImage = book.cover_image_url || getPlaceholderImage('book-cover', book.title);
   const isAvailable = book.available_copies > 0;
+  
+  // Check if user has already borrowed this specific book or has pending request
+  const hasAlreadyBorrowedBook = (bookId: string) => {
+    if (!profile?.id) return false;
+    return records.some(record => 
+      record.user_id === profile.id && 
+      record.book_id === bookId && 
+      (record.status === 'borrowed' || record.status === 'requested' || record.status === 'approved')
+    );
+  };
   
   return (
     <Card className={cn("book-card overflow-hidden", className)}>
@@ -65,9 +77,14 @@ export function BookCard({ book, className }: BookCardProps) {
             variant="default" 
             size="sm" 
             className="w-full bg-lms-blue hover:bg-lms-blue-dark"
-            disabled={!isAvailable}
+            disabled={!isAvailable || hasAlreadyBorrowedBook(book.id)}
+            onClick={() => {
+              if (isAvailable && !hasAlreadyBorrowedBook(book.id) && onBorrow) {
+                onBorrow(book);
+              }
+            }}
           >
-            {isAvailable ? "Borrow" : "Unavailable"}
+            {!isAvailable ? "Unavailable" : hasAlreadyBorrowedBook(book.id) ? "Already Requested" : "Request Book"}
           </Button>
         )}
       </CardFooter>
