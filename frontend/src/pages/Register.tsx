@@ -111,19 +111,21 @@ export default function Register() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">Account Type</Label>
               <Select 
                 defaultValue="user"
                 onValueChange={(value) => setRole(value as UserRole)}
               >
                 <SelectTrigger id="role">
-                  <SelectValue placeholder="Select Role" />
+                  <SelectValue placeholder="Select Account Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin (Librarian)</SelectItem>
-                  <SelectItem value="user">User (Member)</SelectItem>
+                  <SelectItem value="user">Library Member</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Admin accounts are created by existing administrators only.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>

@@ -74,55 +74,7 @@ export default function Settings() {
         description="Manage your account settings and preferences" 
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Settings */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Profile Information
-            </CardTitle>
-            <CardDescription>
-              Update your personal information and profile details.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={profileData.name}
-                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                  placeholder="Enter your full name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profileData.email}
-                  onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                  placeholder="Enter your email"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="profileImage">Profile Image URL</Label>
-              <Input
-                id="profileImage"
-                value={profileData.profileImage}
-                onChange={(e) => setProfileData({ ...profileData, profileImage: e.target.value })}
-                placeholder="Enter profile image URL"
-              />
-            </div>
-            <Button onClick={handleSaveProfile} disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save Profile"}
-            </Button>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Settings */}
         <div className="space-y-6">
           {/* Theme Settings */}
@@ -179,7 +131,7 @@ export default function Settings() {
         </div>
 
         {/* Notification Settings */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />

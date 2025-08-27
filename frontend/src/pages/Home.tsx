@@ -49,6 +49,18 @@ export default function Home() {
   };
 
   const openBorrowDialog = (book: any) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "You need to login to request books.",
+        action: (
+          <Button asChild variant="outline" size="sm">
+            <Link to="/login">Login</Link>
+          </Button>
+        ),
+      });
+      return;
+    }
     setSelectedBook(book);
     setIsBorrowDialogOpen(true);
   };
@@ -118,7 +130,7 @@ export default function Home() {
               <BookCard 
                 key={book.id} 
                 book={book} 
-                onBorrow={isAdmin ? undefined : openBorrowDialog}
+                onBorrow={openBorrowDialog}
                 onEdit={isAdmin ? handleEditBook : undefined}
                 onManage={isAdmin ? handleManageBook : undefined}
               />

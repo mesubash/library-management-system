@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useBorrowRecords } from "@/hooks/useLibraryData";
 import { getPlaceholderImage } from "@/lib/imageUpload";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 interface BookCardProps {
   book: Book;
@@ -17,8 +19,10 @@ interface BookCardProps {
 }
 
 export function BookCard({ book, className, onBorrow, onEdit, onManage }: BookCardProps) {
-  const { role, profile } = useAuth();
+  const { role, profile, isAuthenticated } = useAuth();
   const { records } = useBorrowRecords();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const isAdmin = role === "admin";
   
   // Get consistent placeholder image for this book
@@ -33,6 +37,29 @@ export function BookCard({ book, className, onBorrow, onEdit, onManage }: BookCa
       record.book_id === bookId && 
       (record.status === 'borrowed' || record.status === 'requested' || record.status === 'approved')
     );
+  };
+
+  const handleBookRequest = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to request a book.",
+        action: (
+          <Button 
+            size="sm" 
+            onClick={() => navigate('/login')}
+            className="bg-lms-green hover:bg-lms-green-dark"
+          >
+            Login
+          </Button>
+        ),
+      });
+      return;
+    }
+
+    if (isAvailable && !hasAlreadyBorrowedBook(book.id) && onBorrow) {
+      onBorrow(book);
+    }
   };
   
   return (
@@ -91,14 +118,17 @@ export function BookCard({ book, className, onBorrow, onEdit, onManage }: BookCa
             variant="default" 
             size="sm" 
             className="w-full bg-lms-blue hover:bg-lms-blue-dark"
-            disabled={!isAvailable || hasAlreadyBorrowedBook(book.id)}
-            onClick={() => {
-              if (isAvailable && !hasAlreadyBorrowedBook(book.id) && onBorrow) {
-                onBorrow(book);
-              }
-            }}
+            disabled={isAuthenticated && (!isAvailable || hasAlreadyBorrowedBook(book.id))}
+            onClick={handleBookRequest}
           >
-            {!isAvailable ? "Unavailable" : hasAlreadyBorrowedBook(book.id) ? "Already Requested" : "Request Book"}
+            {!isAuthenticated 
+              ? "Login to Request" 
+              : !isAvailable 
+                ? "Unavailable" 
+                : hasAlreadyBorrowedBook(book.id) 
+                  ? "Already Requested" 
+                  : "Request Book"
+            }
           </Button>
         )}
       </CardFooter>

@@ -8,15 +8,81 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
 import { useBorrowRecords } from "@/hooks/useLibraryData";
-import { User, Mail, Calendar, BookOpen, Book, Clock } from "lucide-react";
+import { User, Calendar, BookOpen, Book, Lock } from "lucide-react";
 import { getPlaceholderImage } from "@/lib/imageUpload";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 export default function Profile() {
   const { user, profile, username } = useAuth();
   const { records } = useBorrowRecords();
   const [isBorrowedBooksOpen, setIsBorrowedBooksOpen] = useState(false);
+  const { toast } = useToast();
+  
+  // Password change state
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Check if this is a test user (disable password change for test accounts)
+  const isTestUser = profile?.email === 'user@lms.com' || profile?.email === 'admin@lms.com';
+
+  const handlePasswordChange = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "New password and confirm password don't match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      // Update password using Supabase auth
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Password Updated",
+        description: "Your password has been changed successfully.",
+      });
+
+      // Reset form and close dialog
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setIsPasswordDialogOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Password Change Failed",
+        description: error.message || "Failed to change password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
   
   // Generate a consistent placeholder image for this user
   const profileImageUrl = getPlaceholderImage('profile', user?.id || profile?.name || 'User');
@@ -53,7 +119,7 @@ export default function Profile() {
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
               <CardDescription>
-                Update your personal information and preferences
+                View your personal information and change your password
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -117,10 +183,95 @@ export default function Profile() {
                 />
               </div>
               
-              <div className="pt-4">
-                <Button disabled>
-                  Edit Profile (Coming Soon)
-                </Button>
+              {/* Password Change Section */}
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Password</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Change your account password
+                    </p>
+                  </div>
+                  <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button 
+                        disabled={isTestUser}
+                        variant="outline"
+                      >
+                        <Lock className="h-4 w-4 mr-2" />
+                        Change Password
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Change Password</DialogTitle>
+                        <DialogDescription>
+                          Enter your current password and choose a new one.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="current-password">Current Password</Label>
+                          <Input
+                            id="current-password"
+                            type="password"
+                            value={passwordData.currentPassword}
+                            onChange={(e) => setPasswordData(prev => ({
+                              ...prev,
+                              currentPassword: e.target.value
+                            }))}
+                            placeholder="Enter current password"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="new-password">New Password</Label>
+                          <Input
+                            id="new-password"
+                            type="password"
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData(prev => ({
+                              ...prev,
+                              newPassword: e.target.value
+                            }))}
+                            placeholder="Enter new password"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirm-password">Confirm New Password</Label>
+                          <Input
+                            id="confirm-password"
+                            type="password"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) => setPasswordData(prev => ({
+                              ...prev,
+                              confirmPassword: e.target.value
+                            }))}
+                            placeholder="Confirm new password"
+                          />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsPasswordDialogOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handlePasswordChange}
+                            disabled={isChangingPassword}
+                          >
+                            {isChangingPassword ? "Changing..." : "Change Password"}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                {isTestUser && (
+                  <p className="text-sm text-amber-600">
+                    Password change is disabled for test accounts.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>

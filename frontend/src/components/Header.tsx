@@ -3,9 +3,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/context/AuthContext";
-import { LogOut, Search, Menu } from "lucide-react";
+import { LogOut, Search, Menu, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -25,12 +26,20 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
   const { isAuthenticated, logout, username, role } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
       navigate(`/books?search=${encodeURIComponent(searchTerm.trim())}`);
     }
+  };
+
+  const handleNotificationClick = () => {
+    toast({
+      title: "Notifications",
+      description: "This feature is under development.",
+    });
   };
 
   // Responsive style: on mobile, no margin; on desktop, marginLeft = sidebarWidth
@@ -73,6 +82,19 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
         {/* Rightmost: Profile info, ThemeToggle, then avatar dropdown */}
         <div className="flex items-center gap-1 sm:gap-2 ml-auto">
           <ThemeToggle />
+          {isAuthenticated && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleNotificationClick}
+              className="relative"
+            >
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                1
+              </span>
+            </Button>
+          )}
           {isAuthenticated && (
             <div className="hidden sm:flex flex-col items-end">
               <span className="text-sm font-medium">{username}</span>

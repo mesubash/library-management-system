@@ -63,6 +63,26 @@ export default function Login() {
     }
   };
   
+  const handleTestLogin = async (testEmail: string, testPassword: string) => {
+    setEmail(testEmail);
+    setPassword(testPassword);
+    setError("");
+    setSuccess("");
+    setIsLoading(true);
+    
+    try {
+      const result = await login(testEmail, testPassword);
+      
+      if (result.error) {
+        setError(result.error);
+      }
+    } catch (error) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md">
@@ -109,6 +129,35 @@ export default function Login() {
                 {error}
               </div>
             )}
+            
+            {/* Test Credentials Section */}
+            <div className="pt-4 border-t">
+              <div className="text-sm text-muted-foreground text-center mb-3">
+                Quick Test Access
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleTestLogin("user@lms.com", "password123")}
+                  disabled={isLoading}
+                  className="text-xs"
+                >
+                  Test User
+                </Button>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleTestLogin("admin@lms.com", "admin123")}
+                  disabled={isLoading}
+                  className="text-xs"
+                >
+                  Test Admin
+                </Button>
+              </div>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button 
