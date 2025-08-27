@@ -3,13 +3,14 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { BookCard } from "@/components/BookCard";
-import { booksData } from "@/data/books";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useBooks } from "@/hooks/useLibraryData";
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
-  const featuredBooks = booksData.slice(0, 6);
+  const { books, loading } = useBooks();
+  const featuredBooks = books.slice(0, 6);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -44,9 +45,19 @@ export default function Home() {
         </PageHeader>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-          {featuredBooks.map((book) => (
-            <BookCard key={book.id} book={book} />
-          ))}
+          {loading ? (
+            Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="bg-gray-200 aspect-[2/3] rounded-lg mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded mb-1"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            ))
+          ) : (
+            featuredBooks.map((book) => (
+              <BookCard key={book.id} book={book} />
+            ))
+          )}
         </div>
       </section>
       
