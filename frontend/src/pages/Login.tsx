@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Mail } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -16,9 +18,17 @@ export default function Login() {
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login, role, isAuthenticated } = useAuth();
+  // Forgot password state
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+  
+  const { login, resetPassword, role, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   
   // Check for success message from registration or email confirmation
   useEffect(() => {
@@ -61,12 +71,25 @@ export default function Login() {
       
       if (result.error) {
         setError(result.error);
+        toast({
+          title: "Login Failed",
+          description: result.error,
+          variant: "destructive",
+        });
       } else {
         // Login successful, navigation will be handled by useEffect
-        // Don't navigate here, let the useEffect handle it when role is available
+        toast({
+          title: "Login Successful",
+          description: "Welcome back! You have been logged in successfully.",
+        });
       }
     } catch (error) {
       setError("An unexpected error occurred");
+      toast({
+        title: "Login Error",
+        description: "An unexpected error occurred during login.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +112,53 @@ export default function Login() {
       setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError("");
+    setResetSuccess("");
+    
+    if (!resetEmail) {
+      setResetError("Please enter your email address");
+      return;
+    }
+    
+    setIsResetting(true);
+    
+    try {
+      const result = await resetPassword(resetEmail);
+      
+      if (result.error) {
+        setResetError(result.error);
+        toast({
+          title: "Reset Failed",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else if (result.success) {
+        setResetSuccess("Password reset link sent! You will receive an email if this account is registered with us.");
+        toast({
+          title: "Reset Link Sent",
+          description: "Password reset link sent! You will receive an email if this account is registered with us.",
+        });
+        setTimeout(() => {
+          setIsForgotPasswordOpen(false);
+          setResetEmail("");
+          setResetError("");
+          setResetSuccess("");
+        }, 4000);
+      }
+    } catch (error) {
+      setResetError("An unexpected error occurred");
+      toast({
+        title: "Reset Error",
+        description: "An unexpected error occurred while sending the reset link.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
     }
   };
   
@@ -144,6 +214,70 @@ export default function Login() {
                 </Button>
               </div>
             </div>
+            
+            {/* Forgot Password Link */}
+            <div className="flex justify-end">
+              <Dialog open={isForgotPasswordOpen} onOpenChange={setIsForgotPasswordOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="link" className="text-sm p-0 h-auto">
+                    Forgot password?
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Reset Password</DialogTitle>
+                    <DialogDescription>
+                      Enter your email address and we'll send you a link to reset your password.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleForgotPassword}>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="reset-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="reset-email"
+                            type="email"
+                            placeholder="Enter your email"
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      {resetSuccess && (
+                        <div className="text-sm text-green-600 text-center p-3 bg-green-50 rounded-md">
+                          {resetSuccess}
+                        </div>
+                      )}
+                      {resetError && (
+                        <div className="text-sm text-red-600 text-center p-3 bg-red-50 rounded-md">
+                          {resetError}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <DialogFooter className="mt-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsForgotPasswordOpen(false)}
+                        disabled={isResetting}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={isResetting}>
+                        {isResetting ? "Sending..." : "Send Reset Link"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            
             {success && (
               <div className="text-sm text-green-600 text-center">
                 {success}

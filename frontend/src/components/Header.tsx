@@ -42,6 +42,22 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
     });
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      toast({
+        title: "Logout Error",
+        description: "An error occurred while logging out.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // Responsive style: on mobile, no margin; on desktop, marginLeft = sidebarWidth
   const headerStyle =
     windowWidth >= 768
@@ -116,7 +132,7 @@ export function Header({ onSidebarMenuClick, sidebarExpanded, windowWidth = 1024
                   <Link to="/settings">Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} className="text-red-600 cursor-pointer">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
                   Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>

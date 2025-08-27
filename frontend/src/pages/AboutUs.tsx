@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Map, Phone, UserRound, Github, Globe, Mail, Code, Award, Heart } from "lucide-react";
+import { Clock, Map, Phone, UserRound, Github, Globe, Mail, Code, Award, Heart, Linkedin} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getPlaceholderImage } from "@/lib/imageUpload";
 
@@ -174,10 +174,7 @@ export default function AboutUs() {
                             <Code className="h-3 w-3 mr-1" />
                             Full Stack
                           </Badge>
-                          <Badge variant="secondary" className="text-xs">
-                            <Award className="h-3 w-3 mr-1" />
-                            React Expert
-                          </Badge>
+                          
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -253,12 +250,26 @@ export default function AboutUs() {
                                   <div className="min-w-0 flex-1">
                                     <p className="font-medium">GitHub</p>
                                     <a 
-                                      href="https://github.com/subashsigdel" 
+                                      href="https://github.com/mesubash" 
                                       target="_blank" 
                                       rel="noopener noreferrer"
                                       className="text-sm text-gray-600 hover:underline break-all"
                                     >
-                                      github.com/subashsigdel
+                                      github.com/mesubash
+                                    </a>
+                                  </div>
+                                </div>
+                                     <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                                  <Linkedin className="h-5 w-5 text-gray-700 flex-shrink-0" />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium">LinkedIn</p>
+                                    <a 
+                                      href="https://www.linkedin.com/in/subashsdhami" 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-gray-600 hover:underline break-all"
+                                    >
+                                      linkedin.com/in/subashsdhami
                                     </a>
                                   </div>
                                 </div>

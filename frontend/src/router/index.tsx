@@ -4,6 +4,7 @@ import MainLayout from "@/layouts/MainLayout";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
+import ResetPassword from "@/pages/ResetPassword";
 import AdminDashboard from "@/pages/AdminDashboard";
 import UserDashboard from "@/pages/UserDashboard";
 import Books from "@/pages/Books";
@@ -46,6 +47,9 @@ export default function AppRouter() {
             <Register />
           )
         } />
+        
+        {/* Reset Password Route - accessible to all */}
+        <Route path="/reset-password" element={<ResetPassword />} />
         
         {/* Protected Routes */}
         <Route path="/profile" element={

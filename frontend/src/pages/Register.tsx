@@ -9,6 +9,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { UserRole } from "@/context/AuthContext";
 import { Logo } from "@/components/Logo";
 import { Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -24,6 +25,7 @@ export default function Register() {
   
   const { register } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,8 +54,20 @@ export default function Register() {
       
       if (result.error) {
         setError(result.error);
+        toast({
+          title: "Registration Failed",
+          description: result.error,
+          variant: "destructive",
+        });
       } else if (result.success) {
         setSuccess(result.message);
+        toast({
+          title: "Registration Successful",
+          description: result.needsConfirmation 
+            ? "Please check your email and confirm your account before logging in." 
+            : "Account created successfully! You can now log in.",
+        });
+        
         // Clear form
         setName("");
         setEmail("");
@@ -74,6 +88,11 @@ export default function Register() {
       }
     } catch (error) {
       setError("An unexpected error occurred");
+      toast({
+        title: "Registration Error",
+        description: "An unexpected error occurred during registration.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

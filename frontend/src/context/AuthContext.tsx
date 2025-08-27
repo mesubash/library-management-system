@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -25,6 +24,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error?: string }>;
   register: (email: string, password: string, name: string, role?: UserRole) => Promise<{ error?: string; success?: boolean; message?: string; needsConfirmation?: boolean }>;
+  resetPassword: (email: string) => Promise<{ error?: string; success?: boolean; message?: string }>;
   logout: () => Promise<void>;
   username: string | null;
 }
@@ -208,6 +208,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      return { success: true, message: 'Password reset email sent. Please check your inbox.' };
+    } catch (error) {
+      return { error: 'An unexpected error occurred' };
+    }
+  };
+
   const logout = async () => {
     await signOut();
     setProfile(null);
@@ -223,6 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         register,
+        resetPassword,
         logout,
         username: profile?.name || null
       }}
