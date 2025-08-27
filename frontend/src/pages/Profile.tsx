@@ -1,193 +1,257 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
+import { useBorrowRecords } from "@/hooks/useLibraryData";
+import { User, Mail, Calendar, BookOpen, Book, Clock } from "lucide-react";
+import { getPlaceholderImage } from "@/lib/imageUpload";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function Profile() {
-  const { username, role } = useAuth();
+  const { user, profile, username } = useAuth();
+  const { records } = useBorrowRecords();
+  const [isBorrowedBooksOpen, setIsBorrowedBooksOpen] = useState(false);
   
-  // For demo purposes, let's create some fake user data
-  const userData = {
-    fullName: username === "admin" ? "Admin User" : "John Doe",
-    email: username === "admin" ? "admin@library.com" : "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Library St, Booktown, BK 12345",
-    memberSince: "January 15, 2023",
-  };
+  // Generate a consistent placeholder image for this user
+  const profileImageUrl = getPlaceholderImage('profile', user?.id || profile?.name || 'User');
+
+  // Calculate dynamic stats
+  const userRecords = records.filter(record => record.user_id === profile?.id);
+  const totalBorrowed = userRecords.length;
+  const totalReturned = userRecords.filter(record => record.status === 'returned').length;
+  const currentBorrowed = userRecords.filter(record => record.status === 'borrowed').length;
+  const currentBorrowedBooks = userRecords.filter(record => record.status === 'borrowed');
   
+  // Calculate fines (overdue books with late fees)
+  const overdueRecords = userRecords.filter(record => 
+    record.status === 'borrowed' && 
+    new Date(record.due_date) < new Date()
+  );
+  const totalFines = overdueRecords.reduce((total, record) => total + (record.fine || 0), 0);
+  
+  // Determine account status based on fines and borrowing behavior
+  const accountStatus = totalFines > 0 ? 'Warning' : 'Active';
+  const membershipType = profile?.role === 'admin' ? 'Administrator' : 'Standard';
+
   return (
     <div className="space-y-8 animate-fade-in">
       <PageHeader 
-        title="Profile" 
-        description="Manage your account information" 
-      >
-        <Button className="bg-lms-blue hover:bg-lms-blue-dark">
-          Edit Profile
-        </Button>
-      </PageHeader>
+        title="My Profile" 
+        description="Manage your account information and library activity" 
+      />
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-1">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Avatar className="h-24 w-24">
-                <AvatarFallback className={role === "admin" ? "bg-lms-green text-white text-3xl" : "bg-lms-blue text-white text-3xl"}>
-                  {username?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <CardTitle>{userData.fullName}</CardTitle>
-            <p className="text-sm text-muted-foreground capitalize">{role} Account</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Email</div>
-                <div>{userData.email}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">Member Since</div>
-                <div>{userData.memberSince}</div>
-              </div>
-              <Separator className="my-2" />
-              {role === "user" && (
-                <div className="space-y-3">
-                  <div className="text-sm">
-                    <div className="font-medium">Account Status</div>
-                    <div className="text-lms-green">Active</div>
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-medium">Borrowed Books</div>
-                    <div>2 books</div>
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-medium">Reading Preferences</div>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <div className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">Fiction</div>
-                      <div className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">Fantasy</div>
-                      <div className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs">Mystery</div>
-                    </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile Information */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Information</CardTitle>
+              <CardDescription>
+                Update your personal information and preferences
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Profile Image Section */}
+              <div className="space-y-4">
+                <Label>Profile Picture</Label>
+                <div className="flex items-center gap-6">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={profileImageUrl} alt={profile?.name} />
+                    <AvatarFallback className="text-lg">
+                      {profile?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="text-sm text-muted-foreground">
+                      Your profile picture is automatically generated based on your name.
+                    </p>
                   </div>
                 </div>
-              )}
-              {role === "admin" && (
-                <div className="space-y-3">
-                  <div className="text-sm">
-                    <div className="font-medium">Role</div>
-                    <div className="text-lms-green">System Administrator</div>
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-medium">Permissions</div>
-                    <div>Full Access</div>
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-medium">Last Login</div>
-                    <div>Today, 10:30 AM</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input id="fullName" value={userData.fullName} readOnly />
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={profile?.name || username || ""}
+                    readOnly
+                    className="bg-muted"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={userData.email} readOnly />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" value={userData.phone} readOnly />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Input id="role" value={role === "admin" ? "Administrator" : "Library Member"} readOnly />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={user?.email || ""}
+                    readOnly
+                    className="bg-muted"
+                  />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" value={userData.address} readOnly />
+                <Label htmlFor="role">Account Type</Label>
+                <Input
+                  id="role"
+                  value={profile?.role || "user"}
+                  readOnly
+                  className="bg-muted capitalize"
+                />
               </div>
               
-              {role === "user" && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Privacy Settings</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">Email Notifications</div>
-                          <div className="text-sm text-muted-foreground">Receive email updates about your account</div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="w-10 h-5 bg-lms-green rounded-full relative">
-                            <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">Reading Activity</div>
-                          <div className="text-sm text-muted-foreground">Show your reading activity on your profile</div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="w-10 h-5 bg-muted rounded-full relative">
-                            <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="member-since">Member Since</Label>
+                <Input
+                  id="member-since"
+                  value={profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "N/A"}
+                  readOnly
+                  className="bg-muted"
+                />
+              </div>
               
-              {role === "admin" && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">System Permissions</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span>Manage Books</span>
-                        <span className="text-lms-green">Full Access</span>
+              <div className="pt-4">
+                <Button disabled>
+                  Edit Profile (Coming Soon)
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Quick Stats */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Library Activity</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <BookOpen className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Books Borrowed</p>
+                  <p className="text-2xl font-bold">{totalBorrowed}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Calendar className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Books Returned</p>
+                  <p className="text-2xl font-bold">{totalReturned}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <User className="h-4 w-4 text-orange-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Current Borrowed</p>
+                  <p className="text-2xl font-bold">{currentBorrowed}</p>
+                </div>
+                {currentBorrowed > 0 && (
+                  <Dialog open={isBorrowedBooksOpen} onOpenChange={setIsBorrowedBooksOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Book className="h-4 w-4 mr-2" />
+                        View
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle>My Borrowed Books</DialogTitle>
+                        <DialogDescription>
+                          Books currently borrowed by you
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="max-h-96 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Book Title</TableHead>
+                              <TableHead>Author</TableHead>
+                              <TableHead>Borrowed Date</TableHead>
+                              <TableHead>Due Date</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {currentBorrowedBooks.map((record) => (
+                              <TableRow key={record.id}>
+                                <TableCell className="font-medium">
+                                  {record.books?.title || 'Unknown Title'}
+                                </TableCell>
+                                <TableCell>{record.books?.author || 'Unknown Author'}</TableCell>
+                                <TableCell>
+                                  {new Date(record.borrow_date).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {new Date(record.due_date).toLocaleDateString()}
+                                    {new Date(record.due_date) < new Date() && (
+                                      <Badge variant="destructive" className="text-xs">
+                                        Overdue
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="secondary">
+                                    {record.status}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Manage Users</span>
-                        <span className="text-lms-green">Full Access</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>View Reports</span>
-                        <span className="text-lms-green">Full Access</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>System Configuration</span>
-                        <span className="text-lms-green">Full Access</span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </form>
-          </CardContent>
-        </Card>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Account Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Account Status</span>
+                  <Badge variant={accountStatus === 'Active' ? 'default' : 'destructive'}>
+                    {accountStatus}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Membership Type</span>
+                  <Badge variant={membershipType === 'Administrator' ? 'default' : 'secondary'}>
+                    {membershipType}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm">Outstanding Fines</span>
+                  <Badge variant={totalFines > 0 ? 'destructive' : 'secondary'}>
+                    ${totalFines.toFixed(2)}
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
