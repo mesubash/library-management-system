@@ -24,7 +24,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error?: string }>;
-  register: (email: string, password: string, name: string, role?: UserRole) => Promise<{ error?: string }>;
+  register: (email: string, password: string, name: string, role?: UserRole) => Promise<{ error?: string; success?: boolean; message?: string; needsConfirmation?: boolean }>;
   logout: () => Promise<void>;
   username: string | null;
 }
@@ -120,6 +120,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (email: string, password: string, name: string, role: UserRole = 'user') => {
     try {
+      // Check if user already exists in our users table first
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+      // If user exists and there's no error, return error message
+      if (existingUser && !checkError) {
+        return { error: 'An account with this email already exists. Please login instead.' };
+      }
+
+      // Proceed with signup
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -128,16 +141,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name,
             role,
           },
-          emailRedirectTo: undefined, // Disable email redirect for now
+          emailRedirectTo: `${window.location.origin}/login?confirmed=true`,
         },
       });
 
       if (error) {
+        // Handle specific Supabase auth errors
+        if (error.message.includes('User already registered') || 
+            error.message.includes('already been registered') ||
+            error.message.includes('already exists') ||
+            error.message.includes('duplicate')) {
+          return { error: 'An account with this email already exists. Please login instead.' };
+        }
         return { error: error.message };
       }
 
-      // If trigger doesn't work, create user profile manually
-      if (data.user && !error) {
+      // If signup was successful and we have a user
+      if (data.user) {
+        // Try to create user profile
         try {
           const { error: profileError } = await supabase
             .from('users')
@@ -148,20 +169,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               role: role
             }]);
 
+          // If profile creation fails due to duplicate, the user already exists
           if (profileError) {
-            console.log('Profile creation handled by trigger or already exists');
+            if (profileError.message.includes('duplicate key') || 
+                profileError.message.includes('already exists') ||
+                profileError.code === '23505') { // PostgreSQL unique violation code
+              return { error: 'An account with this email already exists. Please login instead.' };
+            }
+            console.log('Profile creation handled by trigger');
           }
-        } catch (profileErr) {
+        } catch (profileErr: any) {
+          if (profileErr.message?.includes('duplicate key') || 
+              profileErr.message?.includes('already exists') ||
+              profileErr.code === '23505') {
+            return { error: 'An account with this email already exists. Please login instead.' };
+          }
           console.log('Profile creation handled by trigger');
         }
 
-        // IMPORTANT: Sign out the user immediately after registration
-        // This prevents auto-login and allows proper success message flow
-        await supabase.auth.signOut();
+        // Check if user needs email confirmation
+        if (!data.user.email_confirmed_at) {
+          return { 
+            success: true, 
+            message: 'Registration successful! Please check your email and click the confirmation link to activate your account.',
+            needsConfirmation: true 
+          };
+        }
       }
 
-      return {};
-    } catch (error) {
+      return { success: true, message: 'Registration successful! You can now log in.' };
+    } catch (error: any) {
+      if (error.message?.includes('duplicate key') || 
+          error.message?.includes('already exists') ||
+          error.code === '23505') {
+        return { error: 'An account with this email already exists. Please login instead.' };
+      }
       return { error: 'An unexpected error occurred' };
     }
   };

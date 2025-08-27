@@ -20,14 +20,21 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Check for success message from registration
+  // Check for success message from registration or email confirmation
   useEffect(() => {
-    if (location.state?.message) {
+    const urlParams = new URLSearchParams(location.search);
+    const confirmed = urlParams.get('confirmed');
+    
+    if (confirmed === 'true') {
+      setSuccess("Email confirmed successfully! You can now log in to your account.");
+      // Clean up URL
+      navigate(location.pathname, { replace: true });
+    } else if (location.state?.message) {
       setSuccess(location.state.message);
       // Clear the state to prevent showing the message on refresh
       window.history.replaceState({}, document.title);
     }
-  }, [location]);
+  }, [location, navigate]);
 
   // Handle navigation after authentication
   useEffect(() => {

@@ -52,8 +52,8 @@ export default function Register() {
       
       if (result.error) {
         setError(result.error);
-      } else {
-        setSuccess("Registration successful! Please check your email to verify your account.");
+      } else if (result.success) {
+        setSuccess(result.message);
         // Clear form
         setName("");
         setEmail("");
@@ -61,14 +61,16 @@ export default function Register() {
         setConfirmPassword("");
         setRole("user");
         
-        // Navigate to login page after a short delay to show success message
+        // Navigate to login page after a delay
         setTimeout(() => {
           navigate("/login", { 
             state: { 
-              message: "Account created successfully! Please log in with your credentials." 
+              message: result.needsConfirmation 
+                ? "Please check your email and confirm your account before logging in." 
+                : "Account created successfully! You can now log in."
             }
           });
-        }, 2000);
+        }, 3000);
       }
     } catch (error) {
       setError("An unexpected error occurred");

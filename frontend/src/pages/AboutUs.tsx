@@ -191,7 +191,7 @@ export default function AboutUs() {
                             See Developer Info
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
+                        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle className="flex items-center gap-3">
                               <Avatar className="h-12 w-12">
@@ -204,7 +204,7 @@ export default function AboutUs() {
                               Full Stack Developer & Technology Enthusiast from Nepal
                             </DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-6">
+                          <div className="space-y-6 p-2">
                             {/* About Section */}
                             <div>
                               <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -212,92 +212,51 @@ export default function AboutUs() {
                                 About Me
                               </h4>
                               <p className="text-muted-foreground">
-                                I'm a passionate Full Stack Developer from the beautiful country of Nepal. 
-                                With expertise in modern web technologies like React, Node.js, TypeScript, and Python, 
-                                I create innovative digital solutions that make a positive impact on communities.
+                                I'm a passionate Developer passionate about innovative digital solutions that make a positive impact on communities.
                               </p>
                             </div>
 
-                            {/* Skills & Technologies */}
-                            <div>
-                              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                <Code className="h-5 w-5 text-blue-500" />
-                                Skills & Technologies
-                              </h4>
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h5 className="font-medium mb-2">Frontend</h5>
-                                  <div className="flex flex-wrap gap-1">
-                                    {['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'Vue.js'].map(skill => (
-                                      <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                                <div>
-                                  <h5 className="font-medium mb-2">Backend</h5>
-                                  <div className="flex flex-wrap gap-1">
-                                    {['Node.js', 'Python', 'Express', 'Django', 'PostgreSQL'].map(skill => (
-                                      <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Experience */}
-                            <div>
-                              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                                <Award className="h-5 w-5 text-yellow-500" />
-                                Experience
-                              </h4>
-                              <ul className="space-y-2 text-sm text-muted-foreground">
-                                <li>• 5+ years of experience in Full Stack Development</li>
-                                <li>• Specialized in React.js and modern JavaScript frameworks</li>
-                                <li>• Experience with cloud platforms and DevOps practices</li>
-                                <li>• Passionate about creating user-centric applications</li>
-                                <li>• Contributing to open-source projects and community development</li>
-                              </ul>
-                            </div>
+                           
 
                             {/* Contact Information */}
                             <div>
                               <h4 className="text-lg font-semibold mb-3">Contact & Links</h4>
                               <div className="grid grid-cols-1 gap-3">
-                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-                                  <Globe className="h-5 w-5 text-blue-500" />
-                                  <div>
+                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                                  <Globe className="h-5 w-5 text-blue-500 flex-shrink-0" />
+                                  <div className="min-w-0 flex-1">
                                     <p className="font-medium">Portfolio Website</p>
                                     <a 
                                       href="https://subashsdhami.com.np" 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="text-sm text-blue-600 hover:underline"
+                                      className="text-sm text-blue-600 hover:underline break-all"
                                     >
                                       subashsdhami.com.np
                                     </a>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-                                  <Mail className="h-5 w-5 text-green-500" />
-                                  <div>
+                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                                  <Mail className="h-5 w-5 text-green-500 flex-shrink-0" />
+                                  <div className="min-w-0 flex-1">
                                     <p className="font-medium">Email</p>
                                     <a 
                                       href="mailto:contact@subashsdhami.com.np"
-                                      className="text-sm text-green-600 hover:underline"
+                                      className="text-sm text-green-600 hover:underline break-all"
                                     >
                                       contact@subashsdhami.com.np
                                     </a>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-                                  <Github className="h-5 w-5 text-gray-700" />
-                                  <div>
+                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                                  <Github className="h-5 w-5 text-gray-700 flex-shrink-0" />
+                                  <div className="min-w-0 flex-1">
                                     <p className="font-medium">GitHub</p>
                                     <a 
                                       href="https://github.com/subashsigdel" 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="text-sm text-gray-600 hover:underline"
+                                      className="text-sm text-gray-600 hover:underline break-all"
                                     >
                                       github.com/subashsigdel
                                     </a>
