@@ -359,11 +359,13 @@ export default function Books() {
 
       {/* Books Display with Tabs */}
       <Tabs defaultValue="all-books" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-1' : 'grid-cols-2'}`}>
           <TabsTrigger value="all-books">All Books ({books.length})</TabsTrigger>
-          <TabsTrigger value="my-borrowed" disabled={!profile}>
-            My Borrowed Books ({profile ? records.filter(r => r.user_id === profile.id && r.status === 'borrowed').length : 0})
-          </TabsTrigger>
+          {!isAdmin && (
+            <TabsTrigger value="my-borrowed" disabled={!profile}>
+              My Borrowed Books ({profile ? records.filter(r => r.user_id === profile.id && r.status === 'borrowed').length : 0})
+            </TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="all-books" className="space-y-6">
@@ -470,12 +472,13 @@ export default function Books() {
           )}
         </TabsContent>
         
-        <TabsContent value="my-borrowed" className="space-y-6">
-          {profile ? (
-            (() => {
-              const myBorrowedBooks = records.filter(record => 
-                record.user_id === profile.id && record.status === 'borrowed'
-              );
+        {!isAdmin && (
+          <TabsContent value="my-borrowed" className="space-y-6">
+            {profile ? (
+              (() => {
+                const myBorrowedBooks = records.filter(record => 
+                  record.user_id === profile.id && record.status === 'borrowed'
+                );
               
               return myBorrowedBooks.length === 0 ? (
                 <Card>
@@ -566,6 +569,7 @@ export default function Books() {
             </Card>
           )}
         </TabsContent>
+        )}
       </Tabs>
 
       {/* Request Book Dialog (Updated) */}
@@ -629,9 +633,12 @@ export default function Books() {
 
       {/* Admin: Manage Book Dialog */}
       <Dialog open={isManageBookOpen} onOpenChange={setIsManageBookOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Manage Book - {selectedBookForManage?.title}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Manage Book - {selectedBookForManage?.title}
+            </DialogTitle>
             <DialogDescription>
               Update book copies and view borrowing history
             </DialogDescription>
@@ -640,20 +647,57 @@ export default function Books() {
           {selectedBookForManage && (
             <div className="space-y-6">
               {/* Book Info */}
-              <div className="p-4 rounded-lg border space-y-2">
-                <h3 className="font-semibold text-lg">{selectedBookForManage.title}</h3>
-                <p className="text-muted-foreground">by {selectedBookForManage.author}</p>
-                <div className="flex gap-2">
-                  {selectedBookForManage.categories && (
-                    <Badge variant="secondary">{selectedBookForManage.categories.name}</Badge>
-                  )}
-                  <Badge variant={selectedBookForManage.available_copies > 0 ? "default" : "destructive"}>
-                    {selectedBookForManage.available_copies > 0 ? "Available" : "Unavailable"}
-                  </Badge>
+              <div className="flex items-start gap-4 p-6 rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                <div className="flex-shrink-0">
+                  <img 
+                    src={selectedBookForManage.cover_image_url || getPlaceholderImage('book-cover', selectedBookForManage.title)}
+                    alt={selectedBookForManage.title}
+                    className="w-24 h-32 object-cover rounded-md shadow-md"
+                  />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Current: {selectedBookForManage.available_copies} of {selectedBookForManage.total_copies} available
-                </p>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100">
+                      {selectedBookForManage.title}
+                    </h3>
+                    <p className="text-lg text-gray-600 dark:text-gray-300">
+                      by {selectedBookForManage.author}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedBookForManage.categories && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                        {selectedBookForManage.categories.name}
+                      </Badge>
+                    )}
+                    <Badge variant={selectedBookForManage.available_copies > 0 ? "default" : "destructive"}>
+                      {selectedBookForManage.available_copies > 0 ? "Available" : "Unavailable"}
+                    </Badge>
+                    <Badge variant="outline">
+                      ISBN: {selectedBookForManage.isbn || 'N/A'}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Available:</span>
+                      <span className="text-green-600 font-semibold">{selectedBookForManage.available_copies}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Total:</span>
+                      <span className="font-semibold">{selectedBookForManage.total_copies}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Borrowed:</span>
+                      <span className="text-orange-600 font-semibold">
+                        {selectedBookForManage.total_copies - selectedBookForManage.available_copies}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="font-medium">Published:</span>
+                      <span className="font-semibold">{selectedBookForManage.published_year || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Update Copies Section */}

@@ -1,10 +1,20 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
-import { Clock, Map, Phone, UserRound } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Clock, Map, Phone, UserRound, Github, Globe, Mail, Code, Award, Heart } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getPlaceholderImage } from "@/lib/imageUpload";
 
 export default function AboutUs() {
+  const [isDeveloperDialogOpen, setIsDeveloperDialogOpen] = useState(false);
+  
+  // Generate consistent placeholder for developer
+  const developerAvatar = getPlaceholderImage('profile', 'Subash Singh Dhami');
+
   return (
     <div className="space-y-8 animate-fade-in">
       <PageHeader 
@@ -147,26 +157,170 @@ export default function AboutUs() {
             </div>
             
             <div className="mt-8">
-              <h3 className="text-xl font-semibold mb-4">Our Team</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {[
-                  { name: "Subash Singh Dhami", role: "Lead Developer", img: "https://i.pravatar.cc/300?img=1" },
-                  { name: "Nepal Library Team", role: "Support Team", img: "https://i.pravatar.cc/300?img=3" },
-                  { name: "Community Librarians", role: "Local Partners", img: "https://i.pravatar.cc/300?img=5" },
-                  { name: "Tech Support", role: "System Maintenance", img: "https://i.pravatar.cc/300?img=7" },
-                ].map((member, index) => (
-                  <div key={index} className="flex flex-col items-center">
-                    <div className="w-24 h-24 rounded-full overflow-hidden mb-3">
-                      <img 
-                        src={member.img} 
-                        alt={member.name} 
-                        className="w-full h-full object-cover"
-                      />
+              <h3 className="text-xl font-semibold mb-6">Meet the Developer</h3>
+              <div className="flex justify-center">
+                <Card className="max-w-md w-full">
+                  <CardContent className="pt-6">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <Avatar className="h-24 w-24 border-4 border-primary/20">
+                        <AvatarImage src={developerAvatar} alt="Subash Singh Dhami" />
+                        <AvatarFallback className="text-xl font-bold">SD</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h4 className="text-lg font-bold">Subash Singh Dhami</h4>
+                        <p className="text-muted-foreground mb-2">Full Stack Developer</p>
+                        <div className="flex justify-center gap-2 mb-4">
+                          <Badge variant="secondary" className="text-xs">
+                            <Code className="h-3 w-3 mr-1" />
+                            Full Stack
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            <Award className="h-3 w-3 mr-1" />
+                            React Expert
+                          </Badge>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Passionate developer from Nepal, creating modern web applications 
+                        to serve communities and promote digital literacy.
+                      </p>
+                      <Dialog open={isDeveloperDialogOpen} onOpenChange={setIsDeveloperDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <UserRound className="h-4 w-4 mr-2" />
+                            See Developer Info
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-3">
+                              <Avatar className="h-12 w-12">
+                                <AvatarImage src={developerAvatar} alt="Subash Singh Dhami" />
+                                <AvatarFallback>SD</AvatarFallback>
+                              </Avatar>
+                              Subash Singh Dhami - Developer Profile
+                            </DialogTitle>
+                            <DialogDescription>
+                              Full Stack Developer & Technology Enthusiast from Nepal
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-6">
+                            {/* About Section */}
+                            <div>
+                              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <Heart className="h-5 w-5 text-red-500" />
+                                About Me
+                              </h4>
+                              <p className="text-muted-foreground">
+                                I'm a passionate Full Stack Developer from the beautiful country of Nepal. 
+                                With expertise in modern web technologies like React, Node.js, TypeScript, and Python, 
+                                I create innovative digital solutions that make a positive impact on communities.
+                              </p>
+                            </div>
+
+                            {/* Skills & Technologies */}
+                            <div>
+                              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <Code className="h-5 w-5 text-blue-500" />
+                                Skills & Technologies
+                              </h4>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h5 className="font-medium mb-2">Frontend</h5>
+                                  <div className="flex flex-wrap gap-1">
+                                    {['React', 'TypeScript', 'Next.js', 'Tailwind CSS', 'Vue.js'].map(skill => (
+                                      <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <h5 className="font-medium mb-2">Backend</h5>
+                                  <div className="flex flex-wrap gap-1">
+                                    {['Node.js', 'Python', 'Express', 'Django', 'PostgreSQL'].map(skill => (
+                                      <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Experience */}
+                            <div>
+                              <h4 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <Award className="h-5 w-5 text-yellow-500" />
+                                Experience
+                              </h4>
+                              <ul className="space-y-2 text-sm text-muted-foreground">
+                                <li>• 5+ years of experience in Full Stack Development</li>
+                                <li>• Specialized in React.js and modern JavaScript frameworks</li>
+                                <li>• Experience with cloud platforms and DevOps practices</li>
+                                <li>• Passionate about creating user-centric applications</li>
+                                <li>• Contributing to open-source projects and community development</li>
+                              </ul>
+                            </div>
+
+                            {/* Contact Information */}
+                            <div>
+                              <h4 className="text-lg font-semibold mb-3">Contact & Links</h4>
+                              <div className="grid grid-cols-1 gap-3">
+                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
+                                  <Globe className="h-5 w-5 text-blue-500" />
+                                  <div>
+                                    <p className="font-medium">Portfolio Website</p>
+                                    <a 
+                                      href="https://subashsdhami.com.np" 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-blue-600 hover:underline"
+                                    >
+                                      subashsdhami.com.np
+                                    </a>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
+                                  <Mail className="h-5 w-5 text-green-500" />
+                                  <div>
+                                    <p className="font-medium">Email</p>
+                                    <a 
+                                      href="mailto:contact@subashsdhami.com.np"
+                                      className="text-sm text-green-600 hover:underline"
+                                    >
+                                      contact@subashsdhami.com.np
+                                    </a>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
+                                  <Github className="h-5 w-5 text-gray-700" />
+                                  <div>
+                                    <p className="font-medium">GitHub</p>
+                                    <a 
+                                      href="https://github.com/subashsigdel" 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-gray-600 hover:underline"
+                                    >
+                                      github.com/subashsigdel
+                                    </a>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Mission Statement */}
+                            <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                              <h4 className="text-lg font-semibold mb-2 text-primary">Mission</h4>
+                              <p className="text-sm text-muted-foreground">
+                                "To leverage technology in creating meaningful solutions that serve communities, 
+                                promote education, and contribute to the digital transformation of Nepal while 
+                                maintaining the highest standards of code quality and user experience."
+                              </p>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                    <h4 className="font-semibold">{member.name}</h4>
-                    <p className="text-sm text-muted-foreground">{member.role}</p>
-                  </div>
-                ))}
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
