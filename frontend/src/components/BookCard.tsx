@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Book } from "@/types/book";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { getPlaceholderImage } from "@/lib/imageUpload";
 
 interface BookCardProps {
   book: Book;
@@ -16,20 +17,24 @@ export function BookCard({ book, className }: BookCardProps) {
   const { role } = useAuth();
   const isAdmin = role === "admin";
   
+  // Get consistent placeholder image for this book
+  const coverImage = book.cover_image_url || getPlaceholderImage('book-cover', book.title);
+  const isAvailable = book.available_copies > 0;
+  
   return (
     <Card className={cn("book-card overflow-hidden", className)}>
       <div className="relative aspect-[2/3] overflow-hidden">
         <img
-          src={book.coverUrl}
+          src={coverImage}
           alt={`${book.title} cover`}
           className="object-cover w-full h-full transition-transform hover:scale-105"
         />
         <div className="absolute top-2 right-2">
           <Badge 
-            variant={book.available ? "default" : "outline"}
-            className={book.available ? "bg-lms-green text-white" : ""}
+            variant={isAvailable ? "default" : "outline"}
+            className={isAvailable ? "bg-lms-green text-white" : ""}
           >
-            {book.available ? "Available" : "Borrowed"}
+            {isAvailable ? "Available" : "Borrowed"}
           </Badge>
         </div>
       </div>
@@ -39,7 +44,10 @@ export function BookCard({ book, className }: BookCardProps) {
         <p className="text-sm text-muted-foreground">{book.author}</p>
         <div className="mt-2 space-x-1">
           <Badge variant="secondary" className="text-xs">
-            {book.genre}
+            {book.published_year || 'Unknown Year'}
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            {book.available_copies}/{book.total_copies} Available
           </Badge>
         </div>
       </CardContent>
@@ -49,7 +57,7 @@ export function BookCard({ book, className }: BookCardProps) {
           <>
             <Button variant="outline" size="sm" className="flex-1">Edit</Button>
             <Button variant="default" size="sm" className="flex-1 bg-lms-blue hover:bg-lms-blue-dark">
-              {book.available ? "Mark Borrowed" : "Mark Returned"}
+              Manage
             </Button>
           </>
         ) : (
@@ -57,9 +65,9 @@ export function BookCard({ book, className }: BookCardProps) {
             variant="default" 
             size="sm" 
             className="w-full bg-lms-blue hover:bg-lms-blue-dark"
-            disabled={!book.available}
+            disabled={!isAvailable}
           >
-            {book.available ? "Borrow" : "Unavailable"}
+            {isAvailable ? "Borrow" : "Unavailable"}
           </Button>
         )}
       </CardFooter>
